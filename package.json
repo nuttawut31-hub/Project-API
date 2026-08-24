@@ -1,0 +1,21 @@
+{
+  "name": "gym-membership-management-api",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "mysql2": "^3.10.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.11"
+  }
+}
