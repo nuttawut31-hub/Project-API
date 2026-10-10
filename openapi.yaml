@@ -1,0 +1,745 @@
+openapi: 3.0.3
+info:
+  title: Gym Membership Management API
+  description: |
+    ระบบบริหารจัดการสาขาฟิตเนสและสมาชิก (Fitness Gym Management System)
+
+    ระบบนี้ให้บริการ RESTful API สำหรับ:
+    - จัดการข้อมูลสาขาฟิตเนส (Gyms)
+    - จัดการข้อมูลสมาชิก (Members)
+    - จัดการการสมัครสมาชิก (Memberships)
+    - ดึงข้อมูลสภาพอากาศ (External API — Open-Meteo)
+
+    **รหัสนิสิต:** 67160028 | **ระบบ:** 9 (Fitness Gym)
+  version: 2.0.0
+  contact:
+    name: Student 67160028
+servers:
+  - url: http://localhost:3000
+    description: Local Development Server
+
+tags:
+  - name: Gyms
+    description: จัดการข้อมูลสาขาฟิตเนส
+  - name: Members
+    description: จัดการข้อมูลสมาชิก
+  - name: Memberships
+    description: จัดการการสมัครสมาชิกและสถานะ
+  - name: Weather
+    description: ข้อมูลสภาพอากาศจาก External API (Open-Meteo)
+
+paths:
+  # ─────────────────────────────────────────────
+  #  GYMS
+  # ─────────────────────────────────────────────
+  /api/gyms:
+    get:
+      tags: [Gyms]
+      summary: ดูรายการสาขาฟิตเนสทั้งหมด
+      description: คืนรายการสาขาฟิตเนสทั้งหมดในระบบ รองรับการกรองด้วย max_fee
+      operationId: getAllGyms
+      parameters:
+        - in: query
+          name: max_fee
+          schema:
+            type: number
+            example: 1500
+          description: กรองสาขาที่มี monthly_fee ไม่เกินจำนวนที่ระบุ
+      responses:
+        '200':
+          description: สำเร็จ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GymsListResponse'
+              example:
+                success: true
+                count: 2
+                data:
+                  - id: 1
+                    name: FitLife Siam Paragon
+                    address: 991 Rama I Rd, Pathum Wan, Bangkok
+                    monthly_fee: "1500.00"
+                    phone_number: 02-123-4567
+                    created_at: "2026-01-01T00:00:00.000Z"
+                    updated_at: "2026-01-01T00:00:00.000Z"
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      tags: [Gyms]
+      summary: เพิ่มสาขาฟิตเนสใหม่
+      operationId: createGym
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GymInput'
+            example:
+              name: FitLife On Nut
+              address: 888 Sukhumvit 77, Bangkok
+              monthly_fee: 1400
+              phone_number: 02-456-7890
+      responses:
+        '201':
+          description: สร้างสำเร็จ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GymResponse'
+              example:
+                success: true
+                message: Gym created successfully
+                data:
+                  id: 4
+                  name: FitLife On Nut
+                  address: 888 Sukhumvit 77, Bangkok
+                  monthly_fee: "1400.00"
+                  phone_number: 02-456-7890
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/gyms/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    get:
+      tags: [Gyms]
+      summary: ดูข้อมูลสาขาฟิตเนสตาม ID
+      operationId: getGymById
+      responses:
+        '200':
+          description: สำเร็จ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GymResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    put:
+      tags: [Gyms]
+      summary: แก้ไขข้อมูลสาขาฟิตเนส
+      operationId: updateGym
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GymInput'
+      responses:
+        '200':
+          description: แก้ไขสำเร็จ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GymResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    delete:
+      tags: [Gyms]
+      summary: ลบสาขาฟิตเนส
+      operationId: deleteGym
+      responses:
+        '200':
+          description: ลบสำเร็จ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessMessage'
+              example:
+                success: true
+                message: Gym deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/gyms/{gymId}/memberships:
+    get:
+      tags: [Gyms, Memberships]
+      summary: ดูรายการสมาชิกทั้งหมดของสาขาฟิตเนส
+      operationId: getGymMemberships
+      parameters:
+        - in: path
+          name: gymId
+          required: true
+          schema:
+            type: integer
+          description: ID ของสาขาฟิตเนส
+      responses:
+        '200':
+          description: สำเร็จ
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  gym_name:
+                    type: string
+                  count:
+                    type: integer
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MembershipDetail'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # ─────────────────────────────────────────────
+  #  MEMBERS
+  # ─────────────────────────────────────────────
+  /api/members:
+    get:
+      tags: [Members]
+      summary: ดูรายการสมาชิกทั้งหมด
+      operationId: getAllMembers
+      responses:
+        '200':
+          description: สำเร็จ
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  count:
+                    type: integer
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Member'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      tags: [Members]
+      summary: ลงทะเบียนสมาชิกใหม่
+      operationId: createMember
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MemberInput'
+            example:
+              full_name: Somchai Jaidee
+              email: somchai.j@example.com
+              phone_number: 081-111-2222
+              join_date: "2026-01-01"
+      responses:
+        '201':
+          description: สร้างสำเร็จ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: อีเมลซ้ำในระบบ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: Email already exists
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/members/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    get:
+      tags: [Members]
+      summary: ดูข้อมูลสมาชิกตาม ID
+      operationId: getMemberById
+      responses:
+        '200':
+          description: สำเร็จ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    put:
+      tags: [Members]
+      summary: แก้ไขข้อมูลสมาชิก
+      operationId: updateMember
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MemberInput'
+      responses:
+        '200':
+          description: แก้ไขสำเร็จ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    delete:
+      tags: [Members]
+      summary: ลบสมาชิก
+      operationId: deleteMember
+      responses:
+        '200':
+          description: ลบสำเร็จ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessMessage'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # ─────────────────────────────────────────────
+  #  MEMBERSHIPS
+  # ─────────────────────────────────────────────
+  /api/memberships:
+    get:
+      tags: [Memberships]
+      summary: ดูรายการสมัครสมาชิกทั้งหมด
+      operationId: getAllMemberships
+      responses:
+        '200':
+          description: สำเร็จ
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  count:
+                    type: integer
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MembershipDetail'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      tags: [Memberships]
+      summary: สมัครสมาชิกประจำสาขา
+      operationId: createMembership
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MembershipInput'
+            example:
+              member_id: 1
+              gym_id: 2
+              start_date: "2026-03-01"
+              end_date: "2026-09-01"
+      responses:
+        '201':
+          description: สร้างสำเร็จ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembershipResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/memberships/{id}/status:
+    put:
+      tags: [Memberships]
+      summary: อัปเดตสถานะการสมัครสมาชิก
+      operationId: updateMembershipStatus
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [ACTIVE, EXPIRED, CANCELLED]
+                  example: EXPIRED
+      responses:
+        '200':
+          description: อัปเดตสำเร็จ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembershipResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # ─────────────────────────────────────────────
+  #  WEATHER (External API Integration)
+  # ─────────────────────────────────────────────
+  /api/weather:
+    get:
+      tags: [Weather]
+      summary: ดูสภาพอากาศปัจจุบัน (External API — Open-Meteo)
+      description: |
+        ดึงข้อมูลสภาพอากาศจาก Open-Meteo API เพื่อแนะนำสมาชิกว่าเหมาะกับ
+        การออกกำลังกายกลางแจ้งหรือควรมาใช้บริการที่สาขาฟิตเนส
+
+        ระบบมี **Retry Logic** (fetchWithRetry สูงสุด 2 ครั้ง + Exponential Backoff พร้อม Equal Jitter),
+        **Timeout** (3 วินาที), และ **Fallback** (คืนค่า default เมื่อล้มเหลว)
+      operationId: getWeather
+      parameters:
+        - in: query
+          name: lat
+          schema:
+            type: number
+            default: 13.7563
+          description: Latitude (ค่าเริ่มต้น = กรุงเทพฯ 13.7563)
+        - in: query
+          name: lon
+          schema:
+            type: number
+            default: 100.5018
+          description: Longitude (ค่าเริ่มต้น = กรุงเทพฯ 100.5018)
+      responses:
+        '200':
+          description: สำเร็จ (จาก External API หรือ Fallback)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      weather:
+                        type: object
+                        properties:
+                          source:
+                            type: string
+                            enum: [external, fallback]
+                            description: แหล่งที่มาของข้อมูล (external = API ภายนอก, fallback = ข้อมูลสำรอง)
+                          available:
+                            type: boolean
+                            description: สถานะความพร้อมของข้อมูลสภาพอากาศ
+                          temperature:
+                            type: number
+                            nullable: true
+                            description: อุณหภูมิปัจจุบัน (°C)
+                          windspeed:
+                            type: number
+                            nullable: true
+                            description: ความเร็วลม (km/h)
+                          weathercode:
+                            type: integer
+                            nullable: true
+                            description: รหัสสภาพอากาศ WMO
+                          time:
+                            type: string
+                            nullable: true
+                            description: เวลาที่บันทึกข้อมูลสภาพอากาศ
+                          note:
+                            type: string
+                            nullable: true
+                            description: ข้อความแนะนำหรือแจ้งเตือน
+              examples:
+                external_success:
+                  summary: "ดึงข้อมูลจาก Open-Meteo สำเร็จ (source: external)"
+                  value:
+                    data:
+                      weather:
+                        source: external
+                        available: true
+                        temperature: 25.4
+                        windspeed: 7.9
+                        weathercode: 95
+                        time: "2026-10-10T15:00"
+                        note: null
+                fallback_response:
+                  summary: "Fallback เมื่อ External API ล้มเหลว (source: fallback)"
+                  value:
+                    data:
+                      weather:
+                        source: fallback
+                        available: false
+                        temperature: null
+                        windspeed: null
+                        weathercode: null
+                        time: null
+                        note: "ไม่สามารถดึงข้อมูลสภาพอากาศจากบริการภายนอกได้ในขณะนี้ กรุณาลองใหม่ภายหลัง"
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+# ─────────────────────────────────────────────
+#  COMPONENTS
+# ─────────────────────────────────────────────
+components:
+  parameters:
+    IdParam:
+      in: path
+      name: id
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+      description: ID ของ resource
+
+  schemas:
+    # --- GYM ---
+    GymInput:
+      type: object
+      required: [name, address, monthly_fee, phone_number]
+      properties:
+        name:
+          type: string
+          maxLength: 100
+          example: FitLife Siam Paragon
+        address:
+          type: string
+          maxLength: 255
+          example: 991 Rama I Rd, Pathum Wan, Bangkok
+        monthly_fee:
+          type: number
+          format: float
+          minimum: 0
+          example: 1500
+        phone_number:
+          type: string
+          maxLength: 20
+          example: 02-123-4567
+
+    Gym:
+      allOf:
+        - $ref: '#/components/schemas/GymInput'
+        - type: object
+          properties:
+            id:
+              type: integer
+              example: 1
+            created_at:
+              type: string
+              format: date-time
+            updated_at:
+              type: string
+              format: date-time
+
+    GymResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/Gym'
+
+    GymsListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        count:
+          type: integer
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Gym'
+
+    # --- MEMBER ---
+    MemberInput:
+      type: object
+      required: [full_name, email, phone_number, join_date]
+      properties:
+        full_name:
+          type: string
+          maxLength: 100
+          example: Somchai Jaidee
+        email:
+          type: string
+          format: email
+          maxLength: 100
+          example: somchai.j@example.com
+        phone_number:
+          type: string
+          maxLength: 20
+          example: 081-111-2222
+        join_date:
+          type: string
+          format: date
+          example: "2026-01-01"
+
+    Member:
+      allOf:
+        - $ref: '#/components/schemas/MemberInput'
+        - type: object
+          properties:
+            id:
+              type: integer
+              example: 1
+            created_at:
+              type: string
+              format: date-time
+            updated_at:
+              type: string
+              format: date-time
+
+    MemberResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/Member'
+
+    # --- MEMBERSHIP ---
+    MembershipInput:
+      type: object
+      required: [member_id, gym_id, start_date, end_date]
+      properties:
+        member_id:
+          type: integer
+          example: 1
+        gym_id:
+          type: integer
+          example: 1
+        start_date:
+          type: string
+          format: date
+          example: "2026-01-01"
+        end_date:
+          type: string
+          format: date
+          example: "2026-12-31"
+        status:
+          type: string
+          enum: [ACTIVE, EXPIRED, CANCELLED]
+          default: ACTIVE
+
+    Membership:
+      allOf:
+        - $ref: '#/components/schemas/MembershipInput'
+        - type: object
+          properties:
+            id:
+              type: integer
+              example: 1
+            created_at:
+              type: string
+              format: date-time
+            updated_at:
+              type: string
+              format: date-time
+
+    MembershipDetail:
+      allOf:
+        - $ref: '#/components/schemas/Membership'
+        - type: object
+          properties:
+            member_name:
+              type: string
+              example: Somchai Jaidee
+            member_email:
+              type: string
+              example: somchai.j@example.com
+            gym_name:
+              type: string
+              example: FitLife Siam Paragon
+
+    MembershipResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/Membership'
+
+    # --- COMMON ---
+    SuccessMessage:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+        error:
+          type: string
+
+  responses:
+    BadRequest:
+      description: ข้อมูลไม่ครบหรือไม่ถูกต้อง
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            message: Missing required fields
+    NotFound:
+      description: ไม่พบข้อมูลที่ต้องการ
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            message: Not found
+    InternalServerError:
+      description: เกิดข้อผิดพลาดภายในเซิร์ฟเวอร์
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            message: Internal server error
+            error: "DB connection failed"
