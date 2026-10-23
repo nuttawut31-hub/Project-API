@@ -70,3 +70,25 @@ test("member detail button loads the selected member inline and toggles it close
   expect(button.getAttribute("aria-expanded")).toBe("false");
   dom.window.close();
 });
+
+test("gym detail button shows the selected branch inline and can close it", async () => {
+  const fetchImpl = jest.fn(async (url) => {
+    if (url === "/api/gyms") return json({ data: [{ id: 2, name: "FitLife Test", address: "Bangkok", monthly_fee: "1200", phone_number: "021234567" }] });
+    if (url === "/api/gyms/2") return json({ data: { id: 2, name: "FitLife Test", address: "Bangkok", monthly_fee: "1200", phone_number: "021234567" } });
+    return json({ data: [] });
+  });
+  const dom = page(fetchImpl);
+  await tick(); await tick();
+  const button = dom.window.document.querySelector("#gym-list .record-actions button");
+  const panel = dom.window.document.querySelector("#gym-detail-panel");
+  expect(panel.hidden).toBe(true);
+  button.click();
+  await tick();
+  expect(fetchImpl).toHaveBeenCalledWith("/api/gyms/2", expect.any(Object));
+  expect(panel.textContent).toContain("021234567");
+  expect(button.getAttribute("aria-expanded")).toBe("true");
+  dom.window.document.querySelector("#gym-detail-close").click();
+  expect(panel.hidden).toBe(true);
+  expect(button.getAttribute("aria-expanded")).toBe("false");
+  dom.window.close();
+});

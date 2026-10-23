@@ -298,13 +298,14 @@ table {
   text-align:left;
   min-width:960px
 }
-/* ล็อกสัดส่วนคอลัมน์และเผื่อที่ให้ปุ่มทั้งหมด ป้องกันตารางเลื่อนเมื่อปุ่มแสดง */
-#membership-table { table-layout:fixed; min-width:1190px }
-#membership-table th:nth-child(1),#membership-table td:nth-child(1) { width:190px }
-#membership-table th:nth-child(2),#membership-table td:nth-child(2) { width:190px }
-#membership-table th:nth-child(3),#membership-table td:nth-child(3) { width:270px }
-#membership-table th:nth-child(4),#membership-table td:nth-child(4) { width:130px }
-#membership-table th:nth-child(5),#membership-table td:nth-child(5) { width:410px }
+/* สัดส่วนคอลัมน์ขยายตามหน้าจอ แต่กันพื้นที่ปุ่มไว้คงที่เมื่อเลือกสถานะ */
+#membership-table { table-layout:fixed; min-width:1100px }
+#membership-table th:nth-child(1),#membership-table td:nth-child(1) { width:18% }
+#membership-table th:nth-child(2),#membership-table td:nth-child(2) { width:19% }
+#membership-table th:nth-child(3),#membership-table td:nth-child(3) { width:25% }
+#membership-table th:nth-child(4),#membership-table td:nth-child(4) { width:12% }
+#membership-table th:nth-child(5),#membership-table td:nth-child(5) { width:26% }
+#membership-table th,#membership-table td { padding:13px 16px }
 th,td {
   padding:17px 20px;
   border-bottom:1px solid #edf0eb;
@@ -438,11 +439,20 @@ main { max-width:1320px; padding-inline:clamp(16px,3vw,40px) }
 .auth-card input { min-height:44px; min-width:220px; padding:10px 12px }
 .auth-card button { min-height:44px; padding-inline:20px }
 .auth-card .demo-hint { order:2; margin-top:2px }
-.cards { grid-template-columns:repeat(3,minmax(0,1fr)); gap:18px }
-.gym-card { display:flex; flex-direction:column; min-width:0; padding:22px }
+.cards { grid-template-columns:repeat(3,minmax(0,1fr)); align-items:stretch; gap:18px }
+.gym-card { display:flex; flex-direction:column; min-width:0; min-height:280px; padding:22px }
 .gym-card p { min-height:0; line-height:1.55; overflow-wrap:anywhere }
 .gym-card strong { margin-top:auto; padding-top:10px }
 .record-actions { margin-top:18px; padding-top:15px; border-top:1px solid #e7eee6 }
+.gym-detail-panel { margin-top:16px; padding:20px 22px; border:1px solid #d8e4d9; border-radius:14px; background:#f1f7f1; color:#244936 }
+.gym-detail-panel[hidden] { display:none }
+.gym-detail-panel.error { background:#fff0e8; color:#8f3f20 }
+.gym-detail-heading { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:15px }
+.gym-detail-heading h3 { margin:0; font-size:18px }
+.gym-detail-heading button { min-height:38px; padding:8px 12px; border:1px solid #b9d2c0; border-radius:8px; background:#fff; color:#24543b; font-weight:700 }
+.gym-detail-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px 20px; margin:0 }
+.gym-detail-grid dt { color:#607a67; font-size:12px; font-weight:700 }
+.gym-detail-grid dd { margin:3px 0 0; overflow-wrap:anywhere; font-size:13px; font-weight:700 }
 .record-actions button,.record-link { min-height:36px }
 .record-actions button:hover,.record-link:hover,.query-bar button:hover,.management-form button:not([type=submit]):hover { background:#edf6ef; border-color:#8ab69a }
 .management-panel { padding:0; overflow:hidden }
@@ -473,8 +483,10 @@ button:disabled { cursor:not-allowed }
 button:not(:disabled):active { transform:translateY(1px) }
 @media(max-width:1060px) { .cards { grid-template-columns:repeat(2,minmax(0,1fr)) } }
 @media(max-width:800px) { .hero { grid-template-columns:1fr } .cards { grid-template-columns:1fr } .split { grid-template-columns:1fr } .auth-card input { min-width:0; width:100% } .auth-card label { flex:1 1 210px } }
+@media(max-width:800px) { .gym-detail-grid { grid-template-columns:repeat(2,minmax(0,1fr)) } }
 @media(max-width:520px) { .hero { padding:24px 20px } .hero-card { min-width:0 } .management-form { grid-template-columns:1fr } .member-row { flex-wrap:wrap } .member-main { flex:1 1 calc(100% - 56px) } .member-id { margin-left:50px } .query-bar label { flex:1 1 100% } .query-bar input { max-width:none; width:100% } .query-bar button { flex:1 1 auto } }
 @media(max-width:520px) { .member-detail-panel { padding-left:0 } .member-detail-grid { grid-template-columns:1fr } }
+@media(max-width:520px) { .gym-detail-grid { grid-template-columns:1fr } .gym-detail-heading { align-items:flex-start; flex-direction:column } }
 @media(prefers-reduced-motion:reduce) { html { scroll-behavior:auto } .workflow a { transition:none } }
 /* ปรับฟอร์มและหน้าให้ใช้งานบนแท็บเล็ต/มือถือ */
 @media(max-width:900px) {

@@ -10,7 +10,7 @@
 | OpenAPI ตรง route และสิทธิ์ | ผ่าน static audit | `backend/openapi.yaml`; `node backend/scripts/audit-contract.js` ตรวจ 17 path/method และ auth errors |
 | Postman สำหรับสาธิต | พร้อม | `backend/postman_collection.json` มี Login เก็บ token และ Bearer สำหรับ write request |
 | Migration รักษาข้อมูลเดิม | ผ่าน | `backend/migrate.js`, `001_initial.sql`, `002_auth.sql`; integration รันสองรอบแล้วข้ามเวอร์ชันที่ลงแล้ว |
-| Jest/Supertest และ coverage | ผ่านตามกรณีหลัก | `backend/tests/api.test.js`, `backend/tests/services.test.js`, `docs/coverage-report.md`: 20 tests ผ่าน, lines 74.13%, ระบุ 3 ไฟล์ต่ำสุด |
+| Jest/Supertest และ coverage | ผ่านตามกรณีหลัก | `backend/tests/api.test.js`, `backend/tests/services.test.js`, `docs/coverage-report.md`: 22 tests ผ่าน, lines 74.13%, ระบุ 3 ไฟล์ต่ำสุด |
 | หน้าเว็บเรียก API อย่างน้อย 3 endpoint | ผ่าน | `frontend/app.js` เรียก GET 3, POST 2, PUT 1 และ auth 2 |
 | Loading, success, error, validation | ผ่านใน use case หลัก | `frontend/index.html`, `frontend/app.js`, `frontend/style.css`, `backend/tests/frontend.test.js` |
 | Demo สด 5–7 นาที | มีบทและบัญชีสาธิต | `docs/DEMO-GUIDE.md`; `backend/scripts/check-demo-account.js` ผ่านบนเครื่องนี้; ต้องเปิด MySQL และซ้อมบนเครื่องที่จะนำเสนอจริง |

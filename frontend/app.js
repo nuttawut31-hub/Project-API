@@ -14,6 +14,7 @@ let membershipRows = [];
 let editingGymId = null;
 let editingMemberId = null;
 let maxFee = "";
+let selectedGymId = null;
 
 // แสดงวันที่ในรูปแบบไทย โดยตีความวันที่จากฐานข้อมูลเป็นวันปฏิทิน UTC เพื่อไม่ให้วันเลื่อนตาม timezone
 function formatThaiDate(value) {
@@ -112,6 +113,9 @@ function el(tag, className, value) {
 function renderGyms(gyms) {
   const root = $("#gym-list");
   root.replaceChildren();
+  // ข้อมูลรายการอาจเปลี่ยนหลังรีเฟรช จึงปิดแผงรายละเอียดที่อ้างถึงรายการเก่า
+  selectedGymId = null;
+  $("#gym-detail-panel").hidden = true;
   if (!gyms.length) return root.append(el("p", "", "ยังไม่มีข้อมูลสาขา"));
   for (const gym of gyms) {
     const card = el("article", "gym-card");
@@ -129,19 +133,51 @@ function renderGyms(gyms) {
     card.append(cardHead);
     card.append(el("h3", "", gym.name));
     card.append(el("p", "", gym.address));
-    card.append(el("small", "", gym.phone_number));
     const price = el("strong", "", `${Number(gym.monthly_fee).toLocaleString("th-TH")} ฿`);
     price.append(el("small", "", " / เดือน"));
     card.append(price);
     const actions = el("div", "record-actions");
-    const detail = el("button", "", "รายละเอียด");
+    const detail = el("button", "", "ดูรายละเอียด");
     detail.type = "button";
+    detail.setAttribute("aria-controls", "gym-detail-panel");
+    detail.setAttribute("aria-expanded", "false");
     detail.addEventListener("click", async () => {
+      const panel = $("#gym-detail-panel");
+      if (selectedGymId === gym.id && !panel.hidden) {
+        panel.hidden = true;
+        selectedGymId = null;
+        detail.setAttribute("aria-expanded", "false");
+        return;
+      }
+      selectedGymId = gym.id;
+      panel.hidden = false;
+      panel.classList.remove("error");
+      $("#gym-detail-title").textContent = `รายละเอียด ${gym.name}`;
+      $("#gym-detail-fields").textContent = "กำลังโหลดรายละเอียดสาขา...";
+      root.querySelectorAll('[aria-controls="gym-detail-panel"]').forEach((button) => button.setAttribute("aria-expanded", String(button === detail)));
+      detail.disabled = true;
       try {
-        // GET รายการตาม ID ยืนยันว่ารายละเอียดมาจาก endpoint ที่ประกาศใน OpenAPI
+        // อ่าน GET ตาม ID แล้ววางผลใต้ปุ่มของสาขานั้น ผู้ใช้จึงเห็นผลทันทีโดยไม่ต้องเลื่อนไปหา notice
         const result = await api(`/api/gyms/${gym.id}`);
-        message(`${result.data.name} · ${result.data.address} · ${result.data.phone_number}`, true);
-      } catch (error) { message(error.message); }
+        if (selectedGymId !== gym.id) return;
+        const fields = [
+          ["รหัสสาขา", `#${result.data.id}`], ["ที่อยู่", result.data.address],
+          ["โทรศัพท์", result.data.phone_number],
+          ["ค่าบริการ", `${Number(result.data.monthly_fee).toLocaleString("th-TH")} บาท/เดือน`],
+        ];
+        const list = $("#gym-detail-fields");
+        list.replaceChildren();
+        for (const [label, value] of fields) {
+          const field = el("div");
+          field.append(el("dt", "", label), el("dd", "", value || "—"));
+          list.append(field);
+        }
+        if (selectedGymId === gym.id) panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      } catch (error) {
+        if (selectedGymId !== gym.id) return;
+        $("#gym-detail-fields").textContent = `โหลดรายละเอียดไม่สำเร็จ: ${error.message}`;
+        panel.classList.add("error");
+      } finally { detail.disabled = false; }
     });
     const memberships = el("button", "", "การสมัครของสาขา");
     memberships.type = "button";
@@ -166,6 +202,12 @@ function renderGyms(gyms) {
     root.append(card);
   }
 }
+
+$("#gym-detail-close").addEventListener("click", () => {
+  $("#gym-detail-panel").hidden = true;
+  selectedGymId = null;
+  document.querySelectorAll('#gym-list [aria-controls="gym-detail-panel"]').forEach((button) => button.setAttribute("aria-expanded", "false"));
+});
 
 // แสดงรายชื่อสมาชิกที่ GET /api/members ส่งกลับมา
 function renderMembers(members) {

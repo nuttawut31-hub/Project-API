@@ -1,6 +1,6 @@
 # รายงานการทดสอบและ Coverage — Phase 3
 
-รันจาก `backend/` ด้วย `npm run test:coverage -- --silent` วันที่ 23 ตุลาคม 2026: **20/20 tests ผ่าน**, line coverage รวม **74.13%** (หลักฐานดิบ `docs/coverage-summary.json`)
+รันจาก `backend/` ด้วย `npm run test:coverage -- --silent` วันที่ 23 ตุลาคม 2026: **22/22 tests ผ่าน**, line coverage รวม **74.13%** (หลักฐานดิบ `docs/coverage-summary.json`)
 
 | ไฟล์ที่ coverage ต่ำสุด | Lines | ขอบเขตที่ยังขาด |
 | --- | ---: | --- |
@@ -10,6 +10,6 @@
 
 `src/services/weather-service.js` มี line และ branch coverage 100% ชุดทดสอบใหม่ตรวจ HTTP retry เมื่อ 429/5xx, หยุดเมื่อ 400, timeout parameter, ข้อมูลสำเร็จ และ fallback เมื่อบริการภายนอกล้มเหลว โดย mock HTTP ภายนอก ไม่เรียกเครือข่ายจริง
 
-Jest/Supertest ตรวจ auth 401/403, public GET, การกรองราคา, เพิ่ม/อ่าน/แก้ไขสาขา, ดูการสมัครแยกตามสาขา, เพิ่ม/อ่าน/แก้ไขสมาชิก, การสมัคร, เปลี่ยนสถานะ และ admin ลบสาขา/สมาชิก ส่วน `backend/tests/frontend.test.js` ตรวจสถานะโหลด สำเร็จ ข้อผิดพลาด และการเปิดฟอร์มหลังเข้าสู่ระบบ
+Jest/Supertest ตรวจ auth 401/403, public GET, การกรองราคา, เพิ่ม/อ่าน/แก้ไขสาขา, ดูการสมัครแยกตามสาขา, เพิ่ม/อ่าน/แก้ไขสมาชิก, การสมัคร, เปลี่ยนสถานะ และ admin ลบสาขา/สมาชิก ส่วน `backend/tests/frontend.test.js` ตรวจสถานะโหลด สำเร็จ ข้อผิดพลาด การเปิดฟอร์มหลังเข้าสู่ระบบ และรายละเอียดสมาชิก/สาขาที่เปิดใกล้รายการที่เลือก
 
 Coverage ข้างต้นวัดเฉพาะ `backend/src/`; การทดสอบหน้าเว็บไม่เพิ่มเปอร์เซ็นต์ `npm run test:integration` เป็นการตรวจแยกบน MySQL ชั่วคราวที่เคยผ่านตาม checklist แต่ไม่ได้รันซ้ำในรอบเพิ่ม coverage นี้
