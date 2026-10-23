@@ -47,3 +47,26 @@ test("frontend reports API failure and loading error state", async () => {
   expect(doc.querySelector("#notice").textContent).toContain("เชื่อมต่อเซิร์ฟเวอร์ไม่ได้");
   dom.window.close();
 });
+
+test("member detail button loads the selected member inline and toggles it closed", async () => {
+  const fetchImpl = jest.fn(async (url) => {
+    if (url === "/api/members") return json({ data: [{ id: 9, full_name: "Somchai", email: "somchai@example.test" }] });
+    if (url === "/api/members/9") return json({ data: { id: 9, full_name: "Somchai", email: "somchai@example.test", phone_number: "0812345678", join_date: "2026-10-23" } });
+    return json({ data: [] });
+  });
+  const dom = page(fetchImpl);
+  await tick(); await tick();
+  const button = dom.window.document.querySelector("#member-list .record-link");
+  const panel = dom.window.document.querySelector("#member-detail-9");
+  expect(panel.hidden).toBe(true);
+  button.click();
+  await tick();
+  expect(fetchImpl).toHaveBeenCalledWith("/api/members/9", expect.any(Object));
+  expect(panel.hidden).toBe(false);
+  expect(panel.textContent).toContain("0812345678");
+  expect(button.getAttribute("aria-expanded")).toBe("true");
+  button.click();
+  expect(panel.hidden).toBe(true);
+  expect(button.getAttribute("aria-expanded")).toBe("false");
+  dom.window.close();
+});

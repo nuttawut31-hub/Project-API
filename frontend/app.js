@@ -173,6 +173,8 @@ function renderMembers(members) {
   root.replaceChildren();
   if (!members.length) return root.append(el("p", "", $("#member-search").value ? "ไม่พบสมาชิกที่ค้นหา" : "ยังไม่มีข้อมูลสมาชิก"));
   for (const member of members) {
+    // แต่ละรายการมีแผงรายละเอียดของตัวเอง ผลจาก GET ตาม ID จึงอยู่ใกล้ปุ่มที่กด
+    const item = el("div", "member-item");
     const row = el("div", "member-row");
     row.append(el("span", "initial", (member.full_name || "?").charAt(0).toUpperCase()));
     const main = el("div", "member-main");
@@ -181,11 +183,42 @@ function renderMembers(members) {
     row.append(main, el("small", "member-id", `#${member.id}`));
     const detail = el("button", "record-link", "ดูข้อมูล");
     detail.type = "button";
+    const panel = el("div", "member-detail-panel");
+    panel.id = `member-detail-${member.id}`;
+    panel.hidden = true;
+    panel.setAttribute("role", "region");
+    panel.setAttribute("aria-label", `รายละเอียดสมาชิก ${member.full_name}`);
+    detail.setAttribute("aria-controls", panel.id);
+    detail.setAttribute("aria-expanded", "false");
     detail.addEventListener("click", async () => {
+      if (!panel.hidden) {
+        panel.hidden = true;
+        detail.textContent = "ดูข้อมูล";
+        detail.setAttribute("aria-expanded", "false");
+        return;
+      }
+      panel.hidden = false;
+      panel.textContent = "กำลังโหลดข้อมูลสมาชิก...";
+      detail.disabled = true;
+      detail.setAttribute("aria-expanded", "true");
       try {
         const result = await api(`/api/members/${member.id}`);
-        message(`${result.data.full_name} · ${result.data.email} · ${result.data.phone_number} · สมัคร ${formatThaiDate(result.data.join_date)}`, true);
-      } catch (error) { message(error.message); }
+        const fields = [
+          ["ชื่อ–นามสกุล", result.data.full_name], ["อีเมล", result.data.email],
+          ["เบอร์โทรศัพท์", result.data.phone_number], ["วันที่สมัคร", formatThaiDate(result.data.join_date)],
+        ];
+        const list = el("dl", "member-detail-grid");
+        for (const [label, value] of fields) {
+          const field = el("div");
+          field.append(el("dt", "", label), el("dd", "", value || "—"));
+          list.append(field);
+        }
+        panel.replaceChildren(list);
+        detail.textContent = "ซ่อนข้อมูล";
+      } catch (error) {
+        panel.textContent = `โหลดข้อมูลไม่สำเร็จ: ${error.message}`;
+        panel.classList.add("error");
+      } finally { detail.disabled = false; }
     });
     row.append(detail);
     if (currentUser) {
@@ -204,7 +237,8 @@ function renderMembers(members) {
       ));
       row.append(remove);
     }
-    root.append(row);
+    item.append(row, panel);
+    root.append(item);
   }
 }
 
