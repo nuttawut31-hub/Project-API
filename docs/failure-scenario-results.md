@@ -11,7 +11,7 @@
 
 ระบบถูกออกแบบแยก Layer ชัดเจนตามรูปแบบปฏิบัติการสัปดาห์ที่ 11:
 
-1. **`src/services/external-api.js` (Retry Engine):**
+1. **`backend/src/services/external-api.js` (Retry Engine):**
    - ฟังก์ชัน `fetchWithRetry(url, timeoutMs = 3000, maxRetries = 2)`
    - ตรวจสอบ Error ผ่าน `isRetryable(error)`:
      - Network Error / Timeout (ไม่มี `error.response`) → **Retry**
@@ -25,12 +25,12 @@
      - Attempt 2: ช่วง $1000\text{ ms} - 2000\text{ ms}$
      - ช่วยป้องกันปัญหา Thundering Herd เมื่อบริการภายนอกฟื้นตัว
 
-2. **`src/services/weather-service.js` (Business Logic & Fallback Layer):**
+2. **`backend/src/services/weather-service.js` (Business Logic & Fallback Layer):**
    - เรียก `fetchWithRetry(url, 3000, 2)`
    - เมื่อสำเร็จ: คืนข้อมูลสภาพอากาศพร้อม `source: "external"`, `available: true`
    - เมื่อล้มเหลวครบทุก Retry: จัดการข้อผิดพลาดและคืนค่า **Fallback Object** ทันที พร้อม `source: "fallback"`, `available: false`, ค่าสภาพอากาศเป็น `null` และ `note` แจ้งเตือนผู้ใช้อย่างสุภาพ
 
-3. **`src/index.js` (API Route):**
+3. **`backend/src/index.js` (API Route):**
    - Endpoint `GET /api/weather?lat=...&lon=...`
    - ตอบกลับ HTTP 200 เสมอ พร้อมโครงสร้าง `{ data: { weather } }` ทำให้ระบบไม่เกิดข้อผิดพลาด 500 หรือค้าง (Hang)
 
