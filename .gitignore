@@ -1,5 +1,20 @@
+# Local dependencies and generated reports
 node_modules/
+coverage/
+*.zip
+
+# Machine-specific configuration and demo credentials
 .env
 .env.local
-*.zip
-*.pdf
+.demo-credentials
+
+# Local Codex/Impeccable tooling and review history
+.agents/
+.codex/
+.impeccable/
+
+# Instructor lab materials are reference inputs, not submission source
+docs/lesson/
+phase1/
+phase2/
+submissions/*.png

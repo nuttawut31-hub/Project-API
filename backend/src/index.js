@@ -6,11 +6,15 @@ const swaggerUi = require("swagger-ui-express");
 
 const pool = require("../db");
 const { getWeatherData } = require("./services/weather-service");
+const { login, requireAuth, requireAdmin } = require("./auth");
 
 const PORT = process.env.PORT || 3000;
 const app = express();
 
 app.use(express.json());
+// backend/ กับ frontend/ เป็นโฟลเดอร์พี่น้องกัน; ให้หน้า Demo อยู่ origin เดียวกับ API
+app.use("/app", express.static(path.join(__dirname, "..", "..", "frontend")));
+app.get("/app", (req, res) => res.redirect("/app/"));
 
 // ─────────────────────────────────────────────
 //  Swagger UI  (/api-docs)
@@ -37,6 +41,14 @@ app.get("/", (req, res) => {
   });
 });
 
+// เส้นทางอ่านเป็นสาธารณะ; ทุก POST/PUT/DELETE ใต้ /api ต้อง login ก่อน
+app.post("/api/auth/login", login);
+app.get("/api/auth/me", requireAuth, (req, res) => res.json({ success: true, user: req.user }));
+app.use("/api", (req, res, next) => {
+  if (!["POST", "PUT", "PATCH", "DELETE"].includes(req.method)) return next();
+  requireAuth(req, res, () => req.method === "DELETE" ? requireAdmin(req, res, next) : next());
+});
+
 // ══════════════════════════════════════════════
 //  GYMS
 // ══════════════════════════════════════════════
@@ -50,10 +62,10 @@ app.get("/api/gyms", async (req, res) => {
 
     if (max_fee !== undefined) {
       const fee = parseFloat(max_fee);
-      if (isNaN(fee)) {
+      if (!Number.isFinite(fee) || fee < 0) {
         return res
           .status(400)
-          .json({ success: false, message: "max_fee must be a number" });
+          .json({ success: false, message: "max_fee must be a non-negative number" });
       }
       sql += " WHERE monthly_fee <= ?";
       params.push(fee);
@@ -83,6 +95,9 @@ app.post("/api/gyms", async (req, res) => {
           "Missing required fields: name, address, monthly_fee, phone_number",
       });
     }
+    // DECIMAL ใน MySQL รับเฉพาะค่าตัวเลขที่ไม่ติดลบ; ปฏิเสธก่อนส่ง SQL
+    if (typeof monthly_fee !== "number" || !Number.isFinite(monthly_fee) || monthly_fee < 0)
+      return res.status(400).json({ success: false, message: "monthly_fee must be a non-negative number" });
     const [result] = await pool.query(
       "INSERT INTO gyms (name, address, monthly_fee, phone_number) VALUES (?, ?, ?, ?)",
       [name, address, monthly_fee, phone_number],
@@ -135,6 +150,8 @@ app.put("/api/gyms/:id", async (req, res) => {
           "Missing required fields: name, address, monthly_fee, phone_number",
       });
     }
+    if (typeof monthly_fee !== "number" || !Number.isFinite(monthly_fee) || monthly_fee < 0)
+      return res.status(400).json({ success: false, message: "monthly_fee must be a non-negative number" });
     const [check] = await pool.query("SELECT id FROM gyms WHERE id = ?", [
       req.params.id,
     ]);
@@ -403,6 +420,9 @@ app.post("/api/memberships", async (req, res) => {
           "Missing required fields: member_id, gym_id, start_date, end_date",
       });
     }
+    // ช่วงวันที่ต้องเรียงถูกต้องและ status ต้องเป็นข้อความตาม enum
+    if (typeof start_date !== "string" || typeof end_date !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(start_date) || !/^\d{4}-\d{2}-\d{2}$/.test(end_date) || end_date < start_date)
+      return res.status(400).json({ success: false, message: "Invalid date range" });
     const [memberCheck] = await pool.query(
       "SELECT id FROM members WHERE id = ?",
       [member_id],
@@ -419,7 +439,7 @@ app.post("/api/memberships", async (req, res) => {
       return res.status(404).json({ success: false, message: "Gym not found" });
 
     const validStatuses = ["ACTIVE", "EXPIRED", "CANCELLED"];
-    if (!validStatuses.includes(status.toUpperCase())) {
+    if (typeof status !== "string" || !validStatuses.includes(status.toUpperCase())) {
       return res.status(400).json({
         success: false,
         message: "Invalid status. Must be ACTIVE, EXPIRED, or CANCELLED",
@@ -458,7 +478,7 @@ app.put("/api/memberships/:id/status", async (req, res) => {
         .status(400)
         .json({ success: false, message: "Missing required field: status" });
     }
-    if (!validStatuses.includes(status.toUpperCase())) {
+    if (typeof status !== "string" || !validStatuses.includes(status.toUpperCase())) {
       return res.status(400).json({
         success: false,
         message: "Invalid status. Must be ACTIVE, EXPIRED, or CANCELLED",
@@ -520,7 +540,13 @@ app.get("/api/weather", async (req, res) => {
 });
 
 // ─────────────────────────────────────────────
-app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
-  console.log(`API Docs   at http://localhost:${PORT}/api-docs`);
-});
+// เปิดพอร์ตเฉพาะเมื่อรันไฟล์โดยตรง; ตอนทดสอบจะ import app ไปเปิดพอร์ตชั่วคราว
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Server running at http://localhost:${PORT}`);
+    console.log(`Frontend   at http://localhost:${PORT}/app/`);
+    console.log(`API Docs   at http://localhost:${PORT}/api-docs`);
+  });
+}
+
+module.exports = app;

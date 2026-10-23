@@ -1,8 +1,8 @@
 {
   "info": {
-    "name": "Gym Membership Management API — Phase 2",
+    "name": "Gym Membership Management API — Phase 3",
     "_postman_id": "gym-api-phase2-67160028-9",
-    "description": "Postman Collection สำหรับ Gym Membership Management API\nรหัสนิสิต: 67160028 | Pno: 9\n\nEndpoints:\n- Gyms: CRUD + ดู memberships ของสาขา\n- Members: CRUD\n- Memberships: Create, List, Update Status\n- Weather: External API (Open-Meteo) พร้อม Retry/Timeout/Fallback",
+    "description": "Postman Collection สำหรับ Gym Membership Management API\nรหัสนิสิต: 67160028 | Pno: 9\n\nEndpoints:\n- Gyms: CRUD + ดู memberships ของสาขา\n- Members: CRUD\n- Memberships: Create, List, Update Status\n- Weather: External API (Open-Meteo) พร้อม Retry/Timeout/Fallback\nPhase 3: POST/PUT require staff or admin JWT; DELETE requires admin JWT.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -10,9 +10,64 @@
       "key": "baseUrl",
       "value": "http://localhost:3000",
       "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
     }
   ],
   "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "POST Login (saves token)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"staff@fitlife.local\",\"password\":\"<enter local password>\"}"
+            },
+            "url": "{{baseUrl}}/api/auth/login"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) pm.collectionVariables.set('token', pm.response.json().token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Current User",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/api/auth/me"
+          }
+        }
+      ]
+    },
     {
       "name": " Gyms",
       "item": [
@@ -22,8 +77,13 @@
             "method": "GET",
             "url": {
               "raw": "{{baseUrl}}/api/gyms",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "gyms"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "gyms"
+              ]
             },
             "description": "ดูรายการสาขาฟิตเนสทั้งหมด"
           },
@@ -33,7 +93,10 @@
               "status": "OK",
               "code": 200,
               "header": [
-                { "key": "Content-Type", "value": "application/json" }
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
               ],
               "body": "{\n  \"success\": true,\n  \"count\": 3,\n  \"data\": [\n    {\n      \"id\": 1,\n      \"name\": \"FitLife Siam Paragon\",\n      \"address\": \"991 Rama I Rd, Pathum Wan, Bangkok\",\n      \"monthly_fee\": \"1500.00\",\n      \"phone_number\": \"02-123-4567\",\n      \"created_at\": \"2026-01-01T00:00:00.000Z\",\n      \"updated_at\": \"2026-01-01T00:00:00.000Z\"\n    },\n    {\n      \"id\": 2,\n      \"name\": \"FitLife Central Ladprao\",\n      \"address\": \"1693 Phahonyothin Rd, Chatuchak, Bangkok\",\n      \"monthly_fee\": \"1200.00\",\n      \"phone_number\": \"02-234-5678\",\n      \"created_at\": \"2026-01-01T00:00:00.000Z\",\n      \"updated_at\": \"2026-01-01T00:00:00.000Z\"\n    },\n    {\n      \"id\": 3,\n      \"name\": \"FitLife Mega Bangna\",\n      \"address\": \"39 Bang Na-Trat Rd, Bang Phli, Samut Prakan\",\n      \"monthly_fee\": \"1350.00\",\n      \"phone_number\": \"02-345-6789\",\n      \"created_at\": \"2026-01-01T00:00:00.000Z\",\n      \"updated_at\": \"2026-01-01T00:00:00.000Z\"\n    }\n  ]\n}"
             }
@@ -45,9 +108,19 @@
             "method": "GET",
             "url": {
               "raw": "{{baseUrl}}/api/gyms?max_fee=1300",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "gyms"],
-              "query": [{ "key": "max_fee", "value": "1300" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "gyms"
+              ],
+              "query": [
+                {
+                  "key": "max_fee",
+                  "value": "1300"
+                }
+              ]
             },
             "description": "กรองสาขาที่ monthly_fee ไม่เกิน 1300"
           },
@@ -57,7 +130,10 @@
               "status": "OK",
               "code": 200,
               "header": [
-                { "key": "Content-Type", "value": "application/json" }
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
               ],
               "body": "{\n  \"success\": true,\n  \"count\": 1,\n  \"data\": [\n    {\n      \"id\": 2,\n      \"name\": \"FitLife Central Ladprao\",\n      \"address\": \"1693 Phahonyothin Rd, Chatuchak, Bangkok\",\n      \"monthly_fee\": \"1200.00\",\n      \"phone_number\": \"02-234-5678\"\n    }\n  ]\n}"
             }
@@ -69,15 +145,35 @@
             "method": "POST",
             "url": {
               "raw": "{{baseUrl}}/api/gyms",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "gyms"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "gyms"
+              ]
             },
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"name\": \"FitLife On Nut\",\n  \"address\": \"888 Sukhumvit 77, Watthana, Bangkok\",\n  \"monthly_fee\": 1400,\n  \"phone_number\": \"02-456-7890\"\n}"
             },
-            "description": "เพิ่มสาขาฟิตเนสใหม่"
+            "description": "เพิ่มสาขาฟิตเนสใหม่",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
           },
           "response": [
             {
@@ -85,7 +181,10 @@
               "status": "Created",
               "code": 201,
               "header": [
-                { "key": "Content-Type", "value": "application/json" }
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
               ],
               "body": "{\n  \"success\": true,\n  \"message\": \"Gym created successfully\",\n  \"data\": {\n    \"id\": 4,\n    \"name\": \"FitLife On Nut\",\n    \"address\": \"888 Sukhumvit 77, Watthana, Bangkok\",\n    \"monthly_fee\": \"1400.00\",\n    \"phone_number\": \"02-456-7890\"\n  }\n}"
             },
@@ -94,7 +193,10 @@
               "status": "Bad Request",
               "code": 400,
               "header": [
-                { "key": "Content-Type", "value": "application/json" }
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
               ],
               "body": "{\n  \"success\": false,\n  \"message\": \"Missing required fields: name, address, monthly_fee, phone_number\"\n}"
             }
@@ -106,8 +208,14 @@
             "method": "GET",
             "url": {
               "raw": "{{baseUrl}}/api/gyms/1",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "gyms", "1"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "gyms",
+                "1"
+              ]
             },
             "description": "ดูข้อมูลสาขาตาม ID"
           },
@@ -117,7 +225,10 @@
               "status": "OK",
               "code": 200,
               "header": [
-                { "key": "Content-Type", "value": "application/json" }
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
               ],
               "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": 1,\n    \"name\": \"FitLife Siam Paragon\",\n    \"address\": \"991 Rama I Rd, Pathum Wan, Bangkok\",\n    \"monthly_fee\": \"1500.00\",\n    \"phone_number\": \"02-123-4567\"\n  }\n}"
             },
@@ -126,7 +237,10 @@
               "status": "Not Found",
               "code": 404,
               "header": [
-                { "key": "Content-Type", "value": "application/json" }
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
               ],
               "body": "{\n  \"success\": false,\n  \"message\": \"Gym not found\"\n}"
             }
@@ -138,15 +252,36 @@
             "method": "PUT",
             "url": {
               "raw": "{{baseUrl}}/api/gyms/1",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "gyms", "1"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "gyms",
+                "1"
+              ]
             },
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"name\": \"FitLife Siam Paragon (Updated)\",\n  \"address\": \"991 Rama I Rd, Pathum Wan, Bangkok\",\n  \"monthly_fee\": 1600,\n  \"phone_number\": \"02-123-4567\"\n}"
             },
-            "description": "แก้ไขข้อมูลสาขา"
+            "description": "แก้ไขข้อมูลสาขา",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
           },
           "response": [
             {
@@ -154,7 +289,10 @@
               "status": "OK",
               "code": 200,
               "header": [
-                { "key": "Content-Type", "value": "application/json" }
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
               ],
               "body": "{\n  \"success\": true,\n  \"message\": \"Gym updated successfully\",\n  \"data\": {\n    \"id\": 1,\n    \"name\": \"FitLife Siam Paragon (Updated)\",\n    \"monthly_fee\": \"1600.00\"\n  }\n}"
             }
@@ -166,10 +304,26 @@
             "method": "DELETE",
             "url": {
               "raw": "{{baseUrl}}/api/gyms/4",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "gyms", "4"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "gyms",
+                "4"
+              ]
             },
-            "description": "ลบสาขาฟิตเนส"
+            "description": "ลบสาขาฟิตเนส",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
           },
           "response": [
             {
@@ -177,7 +331,10 @@
               "status": "OK",
               "code": 200,
               "header": [
-                { "key": "Content-Type", "value": "application/json" }
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
               ],
               "body": "{\n  \"success\": true,\n  \"message\": \"Gym deleted successfully\"\n}"
             }
@@ -189,8 +346,15 @@
             "method": "GET",
             "url": {
               "raw": "{{baseUrl}}/api/gyms/1/memberships",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "gyms", "1", "memberships"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "gyms",
+                "1",
+                "memberships"
+              ]
             },
             "description": "ดูประวัติสมาชิกทั้งหมดของสาขา (UC06)"
           },
@@ -200,7 +364,10 @@
               "status": "OK",
               "code": 200,
               "header": [
-                { "key": "Content-Type", "value": "application/json" }
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
               ],
               "body": "{\n  \"success\": true,\n  \"gym_name\": \"FitLife Siam Paragon\",\n  \"count\": 2,\n  \"data\": [\n    {\n      \"id\": 1,\n      \"member_id\": 1,\n      \"gym_id\": 1,\n      \"start_date\": \"2026-01-01\",\n      \"end_date\": \"2026-12-31\",\n      \"status\": \"ACTIVE\",\n      \"member_name\": \"Somchai Jaidee\",\n      \"member_email\": \"somchai.j@example.com\",\n      \"gym_name\": \"FitLife Siam Paragon\"\n    }\n  ]\n}"
             }
@@ -217,8 +384,13 @@
             "method": "GET",
             "url": {
               "raw": "{{baseUrl}}/api/members",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "members"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "members"
+              ]
             },
             "description": "ดูรายการสมาชิกทั้งหมด"
           },
@@ -228,7 +400,10 @@
               "status": "OK",
               "code": 200,
               "header": [
-                { "key": "Content-Type", "value": "application/json" }
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
               ],
               "body": "{\n  \"success\": true,\n  \"count\": 3,\n  \"data\": [\n    {\n      \"id\": 1,\n      \"full_name\": \"Somchai Jaidee\",\n      \"email\": \"somchai.j@example.com\",\n      \"phone_number\": \"081-111-2222\",\n      \"join_date\": \"2026-01-01\"\n    },\n    {\n      \"id\": 2,\n      \"full_name\": \"Suda Rakrian\",\n      \"email\": \"suda.r@example.com\",\n      \"phone_number\": \"082-333-4444\",\n      \"join_date\": \"2026-01-15\"\n    },\n    {\n      \"id\": 3,\n      \"full_name\": \"Wichai Khemkhaeng\",\n      \"email\": \"wichai.k@example.com\",\n      \"phone_number\": \"083-555-6666\",\n      \"join_date\": \"2026-02-01\"\n    }\n  ]\n}"
             }
@@ -240,15 +415,35 @@
             "method": "POST",
             "url": {
               "raw": "{{baseUrl}}/api/members",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "members"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "members"
+              ]
             },
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"full_name\": \"Nattaporn Saengkaew\",\n  \"email\": \"nattaporn.s@example.com\",\n  \"phone_number\": \"084-777-8888\",\n  \"join_date\": \"2026-10-10\"\n}"
             },
-            "description": "ลงทะเบียนสมาชิกใหม่ (UC03)"
+            "description": "ลงทะเบียนสมาชิกใหม่ (UC03)",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
           },
           "response": [
             {
@@ -256,7 +451,10 @@
               "status": "Created",
               "code": 201,
               "header": [
-                { "key": "Content-Type", "value": "application/json" }
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
               ],
               "body": "{\n  \"success\": true,\n  \"message\": \"Member created successfully\",\n  \"data\": {\n    \"id\": 4,\n    \"full_name\": \"Nattaporn Saengkaew\",\n    \"email\": \"nattaporn.s@example.com\",\n    \"phone_number\": \"084-777-8888\",\n    \"join_date\": \"2026-10-10\"\n  }\n}"
             },
@@ -265,7 +463,10 @@
               "status": "Conflict",
               "code": 409,
               "header": [
-                { "key": "Content-Type", "value": "application/json" }
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
               ],
               "body": "{\n  \"success\": false,\n  \"message\": \"Email already exists\"\n}"
             }
@@ -277,8 +478,14 @@
             "method": "GET",
             "url": {
               "raw": "{{baseUrl}}/api/members/1",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "members", "1"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "members",
+                "1"
+              ]
             }
           },
           "response": [
@@ -287,7 +494,10 @@
               "status": "OK",
               "code": 200,
               "header": [
-                { "key": "Content-Type", "value": "application/json" }
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
               ],
               "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": 1,\n    \"full_name\": \"Somchai Jaidee\",\n    \"email\": \"somchai.j@example.com\",\n    \"phone_number\": \"081-111-2222\",\n    \"join_date\": \"2026-01-01\"\n  }\n}"
             }
@@ -299,13 +509,34 @@
             "method": "PUT",
             "url": {
               "raw": "{{baseUrl}}/api/members/1",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "members", "1"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "members",
+                "1"
+              ]
             },
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"full_name\": \"Somchai Jaidee (Updated)\",\n  \"email\": \"somchai.updated@example.com\",\n  \"phone_number\": \"081-999-0000\",\n  \"join_date\": \"2026-01-01\"\n}"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
             }
           },
           "response": [
@@ -314,7 +545,10 @@
               "status": "OK",
               "code": 200,
               "header": [
-                { "key": "Content-Type", "value": "application/json" }
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
               ],
               "body": "{\n  \"success\": true,\n  \"message\": \"Member updated successfully\",\n  \"data\": {\n    \"id\": 1,\n    \"full_name\": \"Somchai Jaidee (Updated)\",\n    \"email\": \"somchai.updated@example.com\"\n  }\n}"
             }
@@ -326,8 +560,24 @@
             "method": "DELETE",
             "url": {
               "raw": "{{baseUrl}}/api/members/4",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "members", "4"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "members",
+                "4"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
             }
           },
           "response": [
@@ -336,7 +586,10 @@
               "status": "OK",
               "code": 200,
               "header": [
-                { "key": "Content-Type", "value": "application/json" }
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
               ],
               "body": "{\n  \"success\": true,\n  \"message\": \"Member deleted successfully\"\n}"
             }
@@ -353,8 +606,13 @@
             "method": "GET",
             "url": {
               "raw": "{{baseUrl}}/api/memberships",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "memberships"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "memberships"
+              ]
             },
             "description": "ดูรายการสมัครสมาชิกทั้งหมด พร้อมชื่อสมาชิกและสาขา (UC06)"
           },
@@ -364,7 +622,10 @@
               "status": "OK",
               "code": 200,
               "header": [
-                { "key": "Content-Type", "value": "application/json" }
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
               ],
               "body": "{\n  \"success\": true,\n  \"count\": 3,\n  \"data\": [\n    {\n      \"id\": 1,\n      \"member_id\": 1,\n      \"gym_id\": 1,\n      \"start_date\": \"2026-01-01\",\n      \"end_date\": \"2026-12-31\",\n      \"status\": \"ACTIVE\",\n      \"member_name\": \"Somchai Jaidee\",\n      \"member_email\": \"somchai.j@example.com\",\n      \"gym_name\": \"FitLife Siam Paragon\"\n    }\n  ]\n}"
             }
@@ -376,15 +637,35 @@
             "method": "POST",
             "url": {
               "raw": "{{baseUrl}}/api/memberships",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "memberships"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "memberships"
+              ]
             },
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"member_id\": 2,\n  \"gym_id\": 1,\n  \"start_date\": \"2026-10-10\",\n  \"end_date\": \"2027-04-10\"\n}"
             },
-            "description": "สมัครสมาชิกประจำสาขา (UC04)"
+            "description": "สมัครสมาชิกประจำสาขา (UC04)",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
           },
           "response": [
             {
@@ -392,7 +673,10 @@
               "status": "Created",
               "code": 201,
               "header": [
-                { "key": "Content-Type", "value": "application/json" }
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
               ],
               "body": "{\n  \"success\": true,\n  \"message\": \"Membership created successfully\",\n  \"data\": {\n    \"id\": 4,\n    \"member_id\": 2,\n    \"gym_id\": 1,\n    \"start_date\": \"2026-10-10\",\n    \"end_date\": \"2027-04-10\",\n    \"status\": \"ACTIVE\"\n  }\n}"
             }
@@ -404,15 +688,37 @@
             "method": "PUT",
             "url": {
               "raw": "{{baseUrl}}/api/memberships/2/status",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "memberships", "2", "status"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "memberships",
+                "2",
+                "status"
+              ]
             },
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"status\": \"EXPIRED\"\n}"
             },
-            "description": "อัปเดตสถานะการสมัครสมาชิก (UC05): ACTIVE | EXPIRED | CANCELLED"
+            "description": "อัปเดตสถานะการสมัครสมาชิก (UC05): ACTIVE | EXPIRED | CANCELLED",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
           },
           "response": [
             {
@@ -420,7 +726,10 @@
               "status": "OK",
               "code": 200,
               "header": [
-                { "key": "Content-Type", "value": "application/json" }
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
               ],
               "body": "{\n  \"success\": true,\n  \"message\": \"Membership status updated successfully\",\n  \"data\": {\n    \"id\": 2,\n    \"status\": \"EXPIRED\"\n  }\n}"
             },
@@ -429,7 +738,10 @@
               "status": "Bad Request",
               "code": 400,
               "header": [
-                { "key": "Content-Type", "value": "application/json" }
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
               ],
               "body": "{\n  \"success\": false,\n  \"message\": \"Invalid status. Must be ACTIVE, EXPIRED, or CANCELLED\"\n}"
             }
@@ -446,8 +758,13 @@
             "method": "GET",
             "url": {
               "raw": "{{baseUrl}}/api/weather",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "weather"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "weather"
+              ]
             },
             "description": "ดูสภาพอากาศกรุงเทพฯ (default)\nใช้ Open-Meteo API พร้อม Retry/Timeout/Fallback"
           },
@@ -457,7 +774,10 @@
               "status": "OK",
               "code": 200,
               "header": [
-                { "key": "Content-Type", "value": "application/json" }
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
               ],
               "body": "{\n  \"data\": {\n    \"weather\": {\n      \"source\": \"external\",\n      \"available\": true,\n      \"temperature\": 25.4,\n      \"windspeed\": 7.9,\n      \"weathercode\": 95,\n      \"time\": \"2026-10-10T15:00\",\n      \"note\": null\n    }\n  }\n}"
             },
@@ -466,7 +786,10 @@
               "status": "OK",
               "code": 200,
               "header": [
-                { "key": "Content-Type", "value": "application/json" }
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
               ],
               "body": "{\n  \"data\": {\n    \"weather\": {\n      \"source\": \"fallback\",\n      \"available\": false,\n      \"temperature\": null,\n      \"windspeed\": null,\n      \"weathercode\": null,\n      \"time\": null,\n      \"note\": \"ไม่สามารถดึงข้อมูลสภาพอากาศจากบริการภายนอกได้ในขณะนี้ กรุณาลองใหม่ภายหลัง\"\n    }\n  }\n}"
             }
@@ -478,11 +801,22 @@
             "method": "GET",
             "url": {
               "raw": "{{baseUrl}}/api/weather?lat=18.7883&lon=98.9853",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "weather"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "weather"
+              ],
               "query": [
-                { "key": "lat", "value": "18.7883" },
-                { "key": "lon", "value": "98.9853" }
+                {
+                  "key": "lat",
+                  "value": "18.7883"
+                },
+                {
+                  "key": "lon",
+                  "value": "98.9853"
+                }
               ]
             },
             "description": "ดูสภาพอากาศเชียงใหม่ (lat=18.7883, lon=98.9853)"
@@ -493,7 +827,10 @@
               "status": "OK",
               "code": 200,
               "header": [
-                { "key": "Content-Type", "value": "application/json" }
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
               ],
               "body": "{\n  \"data\": {\n    \"weather\": {\n      \"source\": \"external\",\n      \"available\": true,\n      \"temperature\": 24.2,\n      \"windspeed\": 6.5,\n      \"weathercode\": 1,\n      \"time\": \"2026-10-10T15:00\",\n      \"note\": null\n    }\n  }\n}"
             }

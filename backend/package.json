@@ -1,0 +1,49 @@
+{
+  "name": "gym-membership-management-api",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "db:migrate": "node migrate.js",
+    "test": "jest --runInBand",
+    "test:coverage": "jest --runInBand --coverage",
+    "user:create": "node scripts/create-user.js",
+    "test:integration": "node scripts/integration-check.js",
+    "user:demo": "node scripts/create-demo-accounts.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.20.0",
+    "bcryptjs": "^3.0.3",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "js-yaml": "^5.4.3",
+    "jsonwebtoken": "^9.0.3",
+    "mysql2": "^3.10.2",
+    "swagger-jsdoc": "^6.3.0",
+    "swagger-ui-express": "^5.0.1",
+    "yaml": "^2.9.1"
+  },
+  "devDependencies": {
+    "jest": "^30.5.2",
+    "jsdom": "^26.1.0",
+    "nodemon": "^3.1.11",
+    "supertest": "^7.3.1"
+  },
+  "jest": {
+    "testMatch": [
+      "**/tests/**/*.test.js"
+    ],
+    "collectCoverageFrom": [
+      "src/**/*.js"
+    ],
+    "coverageReporters": [
+      "text",
+      "json-summary"
+    ]
+  }
+}
