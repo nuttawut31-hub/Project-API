@@ -11,6 +11,7 @@ const statusDescriptions = {
 };
 let memberRows = [];
 let membershipRows = [];
+let gymRows = [];
 let editingGymId = null;
 let editingMemberId = null;
 let maxFee = "";
@@ -118,11 +119,19 @@ function renderGyms(gyms) {
   // ข้อมูลรายการอาจเปลี่ยนหลังรีเฟรช จึงปิดแผงรายละเอียดที่อ้างถึงรายการเก่า
   selectedGymId = null;
   $("#gym-detail-panel").hidden = true;
-  if (!gyms.length) return root.append(el("p", "", "ยังไม่มีข้อมูลสาขา"));
-  for (const gym of gyms) {
+  if (!gyms.length) {
+    const hasQuery = Boolean($("#gym-search").value.trim());
+    const emptyMessage = hasQuery
+      ? "ไม่พบสาขาที่ตรงกับคำค้น ลองเปลี่ยนชื่อสาขาหรือที่อยู่"
+      : (maxFee !== "" ? "ไม่พบสาขาในช่วงค่าบริการนี้" : "ยังไม่มีข้อมูลสาขา");
+    return root.append(el("p", "empty-state", emptyMessage));
+  }
+  gyms.forEach((gym) => {
     const card = el("article", "gym-card");
     const cardHead = el("div", "gym-card-head");
-    cardHead.append(el("span", "num", `สาขา ${String(gym.id).padStart(2, "0")}`));
+    // เลขบนการ์ดเป็นลำดับที่แสดง ไม่ใช่รหัสฐานข้อมูลซึ่งต้องคงเดิมและไม่ใช้ซ้ำ
+    const sequence = gymRows.findIndex((item) => String(item.id) === String(gym.id)) + 1;
+    cardHead.append(el("span", "num", `สาขา ${String(sequence).padStart(2, "0")}`));
     if (currentUser?.role === "admin") {
       const remove = el("button", "row-delete", "ลบสาขา");
       remove.type = "button";
@@ -200,7 +209,17 @@ function renderGyms(gyms) {
     }
     card.append(actions);
     root.append(card);
-  }
+  });
+}
+
+// กรองการ์ดจากข้อมูลที่โหลดไว้ จึงค้นหาได้ทันทีโดยไม่ยิง request ทุกครั้งที่พิมพ์
+function filterVisibleGyms() {
+  const query = $("#gym-search").value.trim().toLocaleLowerCase("th-TH");
+  const visibleGyms = gymRows.filter((gym) =>
+    `${gym.name} ${gym.address}`.toLocaleLowerCase("th-TH").includes(query));
+  renderGyms(visibleGyms);
+  const count = $("#gym-count");
+  if (count) count.textContent = query ? `พบ ${visibleGyms.length} จาก ${gymRows.length} สาขา` : `${gymRows.length} สาขา`;
 }
 
 $("#gym-detail-close").addEventListener("click", () => {
@@ -449,7 +468,8 @@ async function load() {
     const allGyms = maxFee === "" ? gyms : await api("/api/gyms");
     memberRows = members.data;
     membershipRows = memberships.data;
-    renderGyms(gyms.data);
+    gymRows = gyms.data;
+    filterVisibleGyms();
     fillChoices("gym_id", allGyms.data.map((gym) => ({ id: gym.id, label: gym.name })), "เลือกสาขา");
     fillChoices("member_id", members.data.map((member) => ({ id: member.id, label: member.full_name })), "เลือกสมาชิก");
     const gymFilter = $("#membership-gym-filter");
@@ -575,6 +595,7 @@ $("#apply-fee").addEventListener("click", () => {
   load();
 });
 $("#clear-fee").addEventListener("click", () => { $("#max-fee").value = ""; maxFee = ""; load(); });
+$("#gym-search").addEventListener("input", filterVisibleGyms);
 $("#member-search").addEventListener("input", filterVisibleRows);
 $("#membership-search").addEventListener("input", filterVisibleRows);
 $("#membership-gym-filter").addEventListener("change", filterVisibleRows);

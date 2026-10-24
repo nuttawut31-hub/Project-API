@@ -124,7 +124,7 @@ main {
 .membership-tools { display:flex; align-items:end; flex-wrap:wrap; gap:12px; margin-bottom:12px }
 .membership-search { flex:1 1 320px; max-width:420px; margin:0 }
 .membership-branch-filter { flex:0 1 280px; margin:0 }
-.membership-tools select { width:100%; min-height:42px; padding:10px 38px 10px 12px; border:1px solid #ccd8ce; border-radius:8px; background-color:#fff }
+.membership-tools select { width:100% }
 /* ส่วนข้อมูลหลัก: สาขา สมาชิก และแพ็กเกจ */
 .section {
   margin:0 0 42px
@@ -146,6 +146,7 @@ main {
   /* ให้หัวข้ออยู่กึ่งกลางกับปุ่ม; ระยะใต้แถวจัดการที่ section-head */
   margin-bottom:0
 }
+.section-count { margin:4px 0 0; color:var(--muted); font-size:13px }
 .section-head button {
   background:#fff;
   border:1px solid #ccdacd;
@@ -254,23 +255,14 @@ main {
   font-size:13px;
   font-weight:700
 }
-.form-card input,.subscribe input,.subscribe select {
+.form-card input,.subscribe input {
   width:100%;
   padding:11px 16px;
   border:1px solid #ccd8ce;
   border-radius:8px;
   background:#fafcf9
 }
-/* ลูกศรของ native select อยู่ชิดขอบต่างกันตามเบราว์เซอร์ จึงกำหนดตำแหน่งเอง */
-.subscribe select,.status-actions select,.membership-tools select {
-  appearance:none;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='m3 6 5 5 5-5' stroke='%2317362a' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  background-repeat:no-repeat;
-  background-position:right 14px center;
-  background-size:14px 14px;
-}
-.subscribe select { padding-right:38px }
-.form-card input:focus,.subscribe input:focus,.subscribe select:focus {
+.form-card input:focus,.subscribe input:focus {
   outline:2px solid #60b785
 }
 .form-card button,.subscribe button {
@@ -351,12 +343,27 @@ tr:last-child td {
   background:#f9e8e7;
   color:#a3443c
 }
+/* ใช้รูปแบบเดียวกันกับ dropdown ทั้งฟอร์ม ตัวกรอง และการปรับสถานะ */
 select {
-  padding:7px;
+  appearance:none;
+  min-height:42px;
+  padding:9px 40px 9px 12px;
   border:1px solid #cbd9cd;
-  border-radius:7px;
-  background:#fff
+  border-radius:8px;
+  background-color:#fff;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='m3 6 5 5 5-5' stroke='%2317362a' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;
+  background-position:right 13px center;
+  background-size:14px 14px;
+  color:#17362a;
+  cursor:pointer;
+  transition:border-color .16s ease,background-color .16s ease,box-shadow .16s ease
 }
+select:hover:not(:disabled) { border-color:#82ad90; background-color:#fbfdfb }
+select:focus-visible { border-color:#126b48; outline:3px solid #c9e7d1; outline-offset:1px }
+select:disabled { color:#718277; background-color:#f2f5f1; cursor:not-allowed; opacity:.8 }
+select option { color:#17362a; background:#fff }
+.subscribe select { width:100% }
 /* ข้อความแจ้งผลสำเร็จและข้อผิดพลาด */
 .notice {
   padding:14px 18px;
@@ -376,7 +383,7 @@ select {
 .inline-feedback.ok { background:#e3f4e7; color:#126b48 }
 .inline-feedback[hidden],.locked-hint[hidden] { display:none }
 .status-actions { display:flex; align-items:center; gap:7px; flex-wrap:nowrap; min-height:36px }
-.status-actions select { flex:0 0 128px; padding:7px 36px 7px 12px }
+.status-actions select { flex:0 0 140px; min-height:42px }
 .status-actions button { padding:7px 10px; border-radius:7px; border:1px solid #cbd9cd; background:#fff; color:#173e2d; font-weight:700 }
 .status-actions button.save { background:#126b48; color:#fff; border-color:#126b48 }
 .status-actions button.undo { color:#126b48; border-color:#b8d4c2 }
@@ -483,6 +490,9 @@ main { max-width:1320px; padding-inline:clamp(16px,3vw,40px) }
 .management-form button { min-height:42px; padding-inline:16px }
 .query-bar { padding:14px 16px; border:1px solid var(--line); border-radius:12px; background:#fff }
 .query-bar input { min-width:160px }
+.branch-tools label:first-child { flex:1 1 260px }
+.branch-tools label:first-child input { width:100%; max-width:320px }
+.empty-state { grid-column:1/-1; margin:0; padding:22px; color:var(--muted); text-align:center }
 .split { grid-template-columns:minmax(0,1fr) minmax(330px,410px); gap:22px }
 .member-row { gap:12px }
 .member-main { min-width:0 }

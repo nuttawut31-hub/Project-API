@@ -50,8 +50,8 @@
 
     <!-- GET /api/gyms: การ์ดสาขาสร้างจาก frontend/app.js -->
     <section id="branches" class="section">
-      <div class="section-head"><div><h2>สาขาฟิตเนส</h2></div><button type="button" id="reload">รีเฟรชข้อมูล</button></div>
-      <div class="query-bar"><label>ค่าบริการไม่เกิน (บาท)<input id="max-fee" type="number" min="0" step="0.01" placeholder="ทุกระดับราคา"></label><button type="button" id="apply-fee">กรองสาขา</button><button type="button" id="clear-fee">แสดงทุกสาขา</button></div>
+      <div class="section-head"><div><h2>สาขาฟิตเนส</h2><p id="gym-count" class="section-count" aria-live="polite"></p></div><button type="button" id="reload">รีเฟรชข้อมูล</button></div>
+      <div class="query-bar branch-tools"><label>ค้นหาสาขา<input id="gym-search" type="search" placeholder="ชื่อสาขาหรือที่อยู่" autocomplete="off"></label><label>ค่าบริการไม่เกิน (บาท)<input id="max-fee" type="number" min="0" step="0.01" placeholder="ทุกระดับราคา"></label><button type="button" id="apply-fee">กรองสาขา</button><button type="button" id="clear-fee">แสดงทุกสาขา</button></div>
       <div id="gym-list" class="cards" aria-live="polite">กำลังโหลด...</div>
       <div id="gym-detail-panel" class="gym-detail-panel" role="region" aria-live="polite" hidden>
         <div class="gym-detail-heading"><h3 id="gym-detail-title">รายละเอียดสาขา</h3><button type="button" id="gym-detail-close">ปิดรายละเอียด</button></div>
