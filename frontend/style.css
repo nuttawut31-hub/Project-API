@@ -258,8 +258,15 @@ main {
   border-radius:8px;
   background:#fafcf9
 }
-/* เผื่อพื้นที่ไอคอนของ select เพื่อไม่ให้ข้อความและลูกศรชิดขอบช่อง */
-.subscribe select { padding-right:36px }
+/* ลูกศรของ native select อยู่ชิดขอบต่างกันตามเบราว์เซอร์ จึงกำหนดตำแหน่งเอง */
+.subscribe select,.status-actions select {
+  appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='m3 6 5 5 5-5' stroke='%2317362a' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;
+  background-position:right 14px center;
+  background-size:14px 14px;
+}
+.subscribe select { padding-right:38px }
 .form-card input:focus,.subscribe input:focus,.subscribe select:focus {
   outline:2px solid #60b785
 }
@@ -366,7 +373,7 @@ select {
 .inline-feedback.ok { background:#e3f4e7; color:#126b48 }
 .inline-feedback[hidden],.locked-hint[hidden] { display:none }
 .status-actions { display:flex; align-items:center; gap:7px; flex-wrap:nowrap; min-height:36px }
-.status-actions select { flex:0 0 128px; padding:7px 28px 7px 12px }
+.status-actions select { flex:0 0 128px; padding:7px 36px 7px 12px }
 .status-actions button { padding:7px 10px; border-radius:7px; border:1px solid #cbd9cd; background:#fff; color:#173e2d; font-weight:700 }
 .status-actions button.save { background:#126b48; color:#fff; border-color:#126b48 }
 .status-actions button.undo { color:#126b48; border-color:#b8d4c2 }
