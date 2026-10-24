@@ -1,8 +1,9 @@
 -- 1. ตัวอย่างสาขาฟิตเนส (ตาราง gyms)
-INSERT INTO gyms (name, address, monthly_fee, phone_number) VALUES
-('FitLife Siam Paragon', '991 Rama I Rd, Pathum Wan, Bangkok', 1500.00, '02-123-4567'),
-('FitLife Central Ladprao', '1693 Phahonyothin Rd, Chatuchak, Bangkok', 1200.00, '02-234-5678'),
-('FitLife Mega Bangna', '39 Bang Na-Trat Rd, Bang Phli, Samut Prakan', 1350.00, '02-345-6789');
+-- พิกัดใช้ตำแหน่งของศูนย์การค้าแต่ละสาขา เพื่อให้การ์ดสภาพอากาศค้นหาจุดใกล้เคียงได้
+INSERT INTO gyms (name, address, monthly_fee, phone_number, latitude, longitude) VALUES
+('FitLife Siam Paragon', '991 Rama I Rd, Pathum Wan, Bangkok', 1500.00, '02-123-4567', 13.746800, 100.534940),
+('FitLife Central Ladprao', '1693 Phahonyothin Rd, Chatuchak, Bangkok', 1200.00, '02-234-5678', 13.816590, 100.560850),
+('FitLife Mega Bangna', '39 Bang Na-Trat Rd, Bang Phli, Samut Prakan', 1350.00, '02-345-6789', 13.647110, 100.680530);
 
 -- 2. ลตัวอย่างสมาชิก (ตาราง members)
 INSERT INTO members (full_name, email, phone_number, join_date) VALUES

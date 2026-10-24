@@ -22,6 +22,32 @@ app.get("/app", (req, res) => res.redirect("/app/"));
 const openapiPath = path.join(__dirname, "..", "openapi.yaml");
 const openapiDocument = YAML.load(fs.readFileSync(openapiPath, "utf8"));
 
+// พิกัดเป็นข้อมูลเสริมเพื่อรองรับข้อมูลสาขาเดิมที่ยังไม่เคยระบุตำแหน่ง
+function validateGymCoordinates(body) {
+  const hasLatitude = Object.hasOwn(body, "latitude");
+  const hasLongitude = Object.hasOwn(body, "longitude");
+  if (hasLatitude !== hasLongitude) return "latitude and longitude must be provided together";
+  if (!hasLatitude) return null;
+  if (body.latitude === null && body.longitude === null) return null;
+  if (body.latitude === null || body.longitude === null) return "latitude and longitude must be provided together";
+  if (typeof body.latitude !== "number" || !Number.isFinite(body.latitude) || body.latitude < -90 || body.latitude > 90) {
+    return "latitude must be a number between -90 and 90";
+  }
+  if (typeof body.longitude !== "number" || !Number.isFinite(body.longitude) || body.longitude < -180 || body.longitude > 180) {
+    return "longitude must be a number between -180 and 180";
+  }
+  return null;
+}
+
+// mysql2 ส่ง DECIMAL เป็น string; API ใช้ number ตาม OpenAPI เพื่อให้หน้าเว็บส่งต่อได้ตรงชนิด
+function formatGymCoordinates(gym) {
+  return {
+    ...gym,
+    latitude: gym.latitude == null ? null : Number(gym.latitude),
+    longitude: gym.longitude == null ? null : Number(gym.longitude),
+  };
+}
+
 app.use(
   "/api-docs",
   swaggerUi.serve,
@@ -73,7 +99,7 @@ app.get("/api/gyms", async (req, res) => {
 
     sql += " ORDER BY id ASC";
     const [rows] = await pool.query(sql, params);
-    res.json({ success: true, count: rows.length, data: rows });
+    res.json({ success: true, count: rows.length, data: rows.map(formatGymCoordinates) });
   } catch (err) {
     console.error(err);
     res.status(500).json({
@@ -87,7 +113,7 @@ app.get("/api/gyms", async (req, res) => {
 // POST /api/gyms  — เพิ่มสาขาใหม่
 app.post("/api/gyms", async (req, res) => {
   try {
-    const { name, address, monthly_fee, phone_number } = req.body;
+    const { name, address, monthly_fee, phone_number, latitude = null, longitude = null } = req.body;
     if (!name || !address || monthly_fee == null || !phone_number) {
       return res.status(400).json({
         success: false,
@@ -98,9 +124,11 @@ app.post("/api/gyms", async (req, res) => {
     // DECIMAL ใน MySQL รับเฉพาะค่าตัวเลขที่ไม่ติดลบ; ปฏิเสธก่อนส่ง SQL
     if (typeof monthly_fee !== "number" || !Number.isFinite(monthly_fee) || monthly_fee < 0)
       return res.status(400).json({ success: false, message: "monthly_fee must be a non-negative number" });
+    const coordinateError = validateGymCoordinates(req.body);
+    if (coordinateError) return res.status(400).json({ success: false, message: coordinateError });
     const [result] = await pool.query(
-      "INSERT INTO gyms (name, address, monthly_fee, phone_number) VALUES (?, ?, ?, ?)",
-      [name, address, monthly_fee, phone_number],
+      "INSERT INTO gyms (name, address, monthly_fee, phone_number, latitude, longitude) VALUES (?, ?, ?, ?, ?, ?)",
+      [name, address, monthly_fee, phone_number, latitude, longitude],
     );
     const [rows] = await pool.query("SELECT * FROM gyms WHERE id = ?", [
       result.insertId,
@@ -108,7 +136,7 @@ app.post("/api/gyms", async (req, res) => {
     res.status(201).json({
       success: true,
       message: "Gym created successfully",
-      data: rows[0],
+      data: formatGymCoordinates(rows[0]),
     });
   } catch (err) {
     console.error(err);
@@ -128,7 +156,7 @@ app.get("/api/gyms/:id", async (req, res) => {
     ]);
     if (rows.length === 0)
       return res.status(404).json({ success: false, message: "Gym not found" });
-    res.json({ success: true, data: rows[0] });
+    res.json({ success: true, data: formatGymCoordinates(rows[0]) });
   } catch (err) {
     console.error(err);
     res.status(500).json({
@@ -152,23 +180,34 @@ app.put("/api/gyms/:id", async (req, res) => {
     }
     if (typeof monthly_fee !== "number" || !Number.isFinite(monthly_fee) || monthly_fee < 0)
       return res.status(400).json({ success: false, message: "monthly_fee must be a non-negative number" });
+    const coordinateError = validateGymCoordinates(req.body);
+    if (coordinateError) return res.status(400).json({ success: false, message: coordinateError });
     const [check] = await pool.query("SELECT id FROM gyms WHERE id = ?", [
       req.params.id,
     ]);
     if (check.length === 0)
       return res.status(404).json({ success: false, message: "Gym not found" });
 
-    await pool.query(
-      "UPDATE gyms SET name=?, address=?, monthly_fee=?, phone_number=? WHERE id=?",
-      [name, address, monthly_fee, phone_number, req.params.id],
-    );
+    // PUT รุ่นเดิมที่ยังไม่ส่งพิกัดต้องไม่ลบพิกัดที่สาขามีอยู่แล้ว
+    const updateCoordinates = Object.hasOwn(req.body, "latitude") && Object.hasOwn(req.body, "longitude");
+    if (updateCoordinates) {
+      await pool.query(
+        "UPDATE gyms SET name=?, address=?, monthly_fee=?, phone_number=?, latitude=?, longitude=? WHERE id=?",
+        [name, address, monthly_fee, phone_number, req.body.latitude, req.body.longitude, req.params.id],
+      );
+    } else {
+      await pool.query(
+        "UPDATE gyms SET name=?, address=?, monthly_fee=?, phone_number=? WHERE id=?",
+        [name, address, monthly_fee, phone_number, req.params.id],
+      );
+    }
     const [rows] = await pool.query("SELECT * FROM gyms WHERE id = ?", [
       req.params.id,
     ]);
     res.json({
       success: true,
       message: "Gym updated successfully",
-      data: rows[0],
+      data: formatGymCoordinates(rows[0]),
     });
   } catch (err) {
     console.error(err);
@@ -520,8 +559,17 @@ app.put("/api/memberships/:id/status", async (req, res) => {
 // ══════════════════════════════════════════════
 app.get("/api/weather", async (req, res) => {
   try {
-    const lat = parseFloat(req.query.lat) || 13.7563;
-    const lon = parseFloat(req.query.lon) || 100.5018;
+    if ((req.query.lat === undefined) !== (req.query.lon === undefined)) {
+      return res.status(400).json({ success: false, message: "lat and lon must be provided together" });
+    }
+    if (req.query.lat !== undefined && (String(req.query.lat).trim() === "" || String(req.query.lon).trim() === "")) {
+      return res.status(400).json({ success: false, message: "lat and lon must be valid numbers" });
+    }
+    const lat = req.query.lat === undefined ? 13.7563 : Number(req.query.lat);
+    const lon = req.query.lon === undefined ? 100.5018 : Number(req.query.lon);
+    if (!Number.isFinite(lat) || lat < -90 || lat > 90 || !Number.isFinite(lon) || lon < -180 || lon > 180) {
+      return res.status(400).json({ success: false, message: "lat must be between -90 and 90 and lon between -180 and 180" });
+    }
 
     // weather-service จัดการ fallback ไว้แล้ว → route นี้คืน 200 เสมอ
     const weather = await getWeatherData(lat, lon);

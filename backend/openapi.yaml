@@ -128,6 +128,8 @@ paths:
                     phone_number: 02-123-4567
                     created_at: '2026-01-01T00:00:00.000Z'
                     updated_at: '2026-01-01T00:00:00.000Z'
+                    latitude: 13.7468
+                    longitude: 100.53494
         '400':
           description: max_fee ไม่ใช่ตัวเลขหรือมีค่าน้อยกว่า 0
           content:
@@ -143,6 +145,7 @@ paths:
       tags:
         - Gyms
       summary: เพิ่มสาขาฟิตเนสใหม่
+      description: ส่ง latitude และ longitude มาพร้อมกันเมื่อทราบตำแหน่งจริง; หากไม่ส่งทั้งคู่ สาขาจะยังไม่มีพิกัด
       operationId: createGym
       security:
         - bearerAuth: []
@@ -157,6 +160,8 @@ paths:
               address: 888 Sukhumvit 77, Bangkok
               monthly_fee: 1400
               phone_number: 02-456-7890
+              latitude: 13.7
+              longitude: 100.6
       responses:
         '201':
           description: สร้างสำเร็จ
@@ -173,6 +178,8 @@ paths:
                   address: 888 Sukhumvit 77, Bangkok
                   monthly_fee: '1400.00'
                   phone_number: 02-456-7890
+                  latitude: 13.7
+                  longitude: 100.6
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -202,6 +209,7 @@ paths:
       tags:
         - Gyms
       summary: แก้ไขข้อมูลสาขาฟิตเนส
+      description: ต้องส่งข้อมูลหลักของสาขาครบ; ส่งพิกัด latitude และ longitude เป็นคู่, ละทั้งคู่ไว้เพื่อคงพิกัดเดิม, หรือส่งทั้งคู่เป็น null เพื่อล้างพิกัด
       operationId: updateGym
       security:
         - bearerAuth: []
@@ -536,14 +544,18 @@ paths:
           name: lat
           schema:
             type: number
+            minimum: -90
+            maximum: 90
             default: 13.7563
-          description: Latitude (ค่าเริ่มต้น = กรุงเทพฯ 13.7563)
+          description: ละติจูด; ต้องส่งคู่กับ lon; หากไม่ส่งทั้งคู่จะใช้พิกัดกรุงเทพฯ (13.7563, 100.5018)
         - in: query
           name: lon
           schema:
             type: number
+            minimum: -180
+            maximum: 180
             default: 100.5018
-          description: Longitude (ค่าเริ่มต้น = กรุงเทพฯ 100.5018)
+          description: ลองจิจูด; ต้องส่งคู่กับ lat; หากไม่ส่งทั้งคู่จะใช้พิกัดกรุงเทพฯ (13.7563, 100.5018)
       responses:
         '200':
           description: สำเร็จ (จาก External API หรือ Fallback)
@@ -612,6 +624,15 @@ paths:
                         weathercode: null
                         time: null
                         note: ไม่สามารถดึงข้อมูลสภาพอากาศจากบริการภายนอกได้ในขณะนี้ กรุณาลองใหม่ภายหลัง
+        '400':
+          description: ต้องส่ง lat และ lon พร้อมกัน และค่าต้องอยู่ในช่วงพิกัดที่ถูกต้อง
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: lat and lon must be provided together
         '500':
           $ref: '#/components/responses/InternalServerError'
 components:
@@ -668,6 +689,22 @@ components:
           type: string
           maxLength: 20
           example: 02-123-4567
+        latitude:
+          type: number
+          format: double
+          minimum: -90
+          maximum: 90
+          nullable: true
+          description: พิกัดละติจูด ไม่บังคับ; ต้องส่งคู่กับ longitude. หากเว้นทั้งคู่จะเก็บเป็น null
+          example: 13.7468
+        longitude:
+          type: number
+          format: double
+          minimum: -180
+          maximum: 180
+          nullable: true
+          description: พิกัดลองจิจูด ไม่บังคับ; ต้องส่งคู่กับ latitude. หากเว้นทั้งคู่จะเก็บเป็น null
+          example: 100.53494
     Gym:
       type: object
       properties:
@@ -686,6 +723,20 @@ components:
           type: string
           maxLength: 20
           example: 02-123-4567
+        latitude:
+          type: number
+          format: double
+          minimum: -90
+          maximum: 90
+          nullable: true
+          example: 13.7468
+        longitude:
+          type: number
+          format: double
+          minimum: -180
+          maximum: 180
+          nullable: true
+          example: 100.53494
         id:
           type: integer
         created_at:

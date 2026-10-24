@@ -16,7 +16,7 @@ async function getWeatherData(latitude = 13.7563, longitude = 100.5018, options 
   const url =
     options.url ||
     `https://api.open-meteo.com/v1/forecast` +
-    `?latitude=${latitude}&longitude=${longitude}&current_weather=true&forecast_days=1`;
+    `?latitude=${latitude}&longitude=${longitude}&current_weather=true&forecast_days=1&timezone=auto`;
   const timeoutMs = options.timeoutMs ?? 3000;
   const maxRetries = options.maxRetries ?? 2;
 

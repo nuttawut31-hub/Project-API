@@ -99,6 +99,32 @@ test("staff can create, read, and update a gym with validated monthly fee", asyn
   expect(pool.query).toHaveBeenCalledWith(expect.stringContaining("UPDATE gyms SET"), expect.arrayContaining([1200, "2"]));
 });
 
+test("gym coordinates are optional, paired, and range checked", async () => {
+  const header = await auth();
+  const gym = { name: "FitLife Test", address: "Bangkok", monthly_fee: 1200, phone_number: "021234567" };
+  expect((await request(app).post("/api/gyms").set("Authorization", header).send({ ...gym, latitude: 13.7 })).status).toBe(400);
+  expect((await request(app).post("/api/gyms").set("Authorization", header).send({ ...gym, latitude: 91, longitude: 100 })).status).toBe(400);
+  const created = await request(app).post("/api/gyms").set("Authorization", header).send({ ...gym, latitude: 13.7, longitude: 100.6 });
+  expect(created.status).toBe(201);
+  expect(pool.query).toHaveBeenCalledWith(expect.stringContaining("latitude, longitude"), [gym.name, gym.address, gym.monthly_fee, gym.phone_number, 13.7, 100.6]);
+  const updated = await request(app).put("/api/gyms/2").set("Authorization", header).send({ ...gym, latitude: null, longitude: null });
+  expect(updated.status).toBe(200);
+  expect(pool.query).toHaveBeenCalledWith(expect.stringContaining("latitude=?, longitude=?"), [gym.name, gym.address, gym.monthly_fee, gym.phone_number, null, null, "2"]);
+});
+
+test("legacy gym update without coordinates preserves the coordinate columns", async () => {
+  const header = await auth();
+  const gym = { name: "FitLife Test", address: "Bangkok", monthly_fee: 1200, phone_number: "021234567" };
+  expect((await request(app).put("/api/gyms/2").set("Authorization", header).send(gym)).status).toBe(200);
+  expect(pool.query).toHaveBeenCalledWith(expect.stringContaining("UPDATE gyms SET name=?, address=?, monthly_fee=?, phone_number=? WHERE id=?"), [gym.name, gym.address, gym.monthly_fee, gym.phone_number, "2"]);
+});
+
+test("weather coordinates accept zero and reject incomplete or invalid ranges", async () => {
+  expect((await request(app).get("/api/weather?lat=0")).status).toBe(400);
+  expect((await request(app).get("/api/weather?lat=&lon=0")).status).toBe(400);
+  expect((await request(app).get("/api/weather?lat=91&lon=0")).status).toBe(400);
+});
+
 test("member detail and update follow the same authenticated edit path as the UI", async () => {
   const header = await auth();
   const detail = await request(app).get("/api/members/9");
