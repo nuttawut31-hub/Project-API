@@ -621,4 +621,30 @@ $("#membership-form").addEventListener("submit", async (event) => {
   }
 });
 // เริ่มดึงข้อมูลทันทีเมื่อสคริปต์โหลดเสร็จ (script ใช้ defer)
+const sectionNavLinks = [...document.querySelectorAll('.topbar nav a[href^="#"]')];
+const sectionNavTargets = sectionNavLinks
+  .map((link) => document.querySelector(link.getAttribute("href")))
+  .filter(Boolean);
+
+if ("IntersectionObserver" in window && sectionNavTargets.length) {
+  const visibleSections = new Set();
+  const sectionObserver = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) visibleSections.add(entry.target);
+      else visibleSections.delete(entry.target);
+    });
+
+    const currentSection = [...visibleSections].sort((a, b) =>
+      Math.abs(a.getBoundingClientRect().top - 100) - Math.abs(b.getBoundingClientRect().top - 100),
+    )[0];
+
+    sectionNavLinks.forEach((link) => {
+      if (currentSection && link.hash === `#${currentSection.id}`) link.setAttribute("aria-current", "location");
+      else link.removeAttribute("aria-current");
+    });
+  }, { rootMargin: "-12% 0px -72% 0px" });
+
+  sectionNavTargets.forEach((section) => sectionObserver.observe(section));
+}
+
 restoreSession().then(load);

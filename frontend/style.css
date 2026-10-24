@@ -25,6 +25,9 @@ a {
 }
 /* แถบนำทางด้านบน */
 .topbar {
+  position:sticky;
+  top:0;
+  z-index:30;
   display:flex;
   align-items:center;
   justify-content:space-between;
@@ -64,6 +67,9 @@ a {
 .topbar nav a:hover,footer a:hover {
   color:#16865b
 }
+.topbar nav a[aria-current="location"] { color:var(--green); text-decoration:underline; text-decoration-thickness:2px; font-weight:800 }
+.topbar nav a[href="/api-docs"] { color:var(--muted); font-size:13px; font-weight:500 }
+.topbar nav a[href="/api-docs"]:hover { color:var(--green) }
 main {
   max-width:1240px;
   margin:auto;
@@ -452,9 +458,22 @@ main { max-width:1320px; padding-inline:clamp(16px,3vw,40px) }
 .hero-card { min-width:220px; border:1px solid #c9dfd0 }
 .workflow { margin-bottom:24px }
 .workflow a { min-height:44px; transition:background .18s ease,border-color .18s ease }
-.section { margin-bottom:52px; scroll-margin-top:24px }
+.section { margin-bottom:44px; scroll-margin-top:92px }
+.auth-card { scroll-margin-top:92px }
 .section h2 { font-size:clamp(25px,2.4vw,31px); letter-spacing:-.025em }
 .section-head { margin-bottom:16px }
+.supporting-heading {
+  /* เส้นแบ่งทำให้จบงานหลักก่อนเข้าสู่ข้อมูลประกอบ โดยไม่สร้างการ์ดซ้อน */
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+  gap:16px;
+  margin:12px 0 18px;
+  padding-top:28px;
+  border-top:1px solid var(--line)
+}
+.supporting-heading h2 { margin:0; font-size:22px; letter-spacing:-.02em }
+.supporting-heading p { margin:0; color:var(--muted); font-size:14px }
 .auth-card { padding:22px 26px; margin-bottom:48px; background:#fdfefd }
 .auth-card form { column-gap:16px; row-gap:12px }
 .auth-card h2 { font-size:22px }
@@ -533,8 +552,14 @@ button:not(:disabled):active { transform:translateY(1px) }
   }
   .topbar nav {
     margin-top:15px;
-    flex-wrap:wrap;
-    gap:14px
+    flex-wrap:nowrap;
+    gap:18px;
+    overflow-x:auto;
+    white-space:nowrap;
+    scrollbar-width:none
+  }
+  .topbar nav::-webkit-scrollbar {
+    display:none
   }
   .hero,.split {
     grid-template-columns:1fr
@@ -542,11 +567,20 @@ button:not(:disabled):active { transform:translateY(1px) }
   .hero {
     padding:22px
   }
+  .section,.auth-card { scroll-margin-top:118px }
   .hero-card {
     max-width:400px
   }
+  .supporting-heading { align-items:flex-start; flex-direction:column; gap:4px }
 }
 @media(max-width:520px) {
+  .hero { gap:14px; padding:18px 16px; margin-block:16px }
+  .hero h1 { font-size:clamp(30px,9vw,34px) }
+  .hero p { font-size:14px; line-height:1.55 }
+  .hero-card { padding:12px 16px }
+  .hero-card strong { font-size:21px }
+  .workflow-caption { margin-bottom:6px }
+  .workflow { margin-bottom:18px }
   .management-form { grid-template-columns:1fr }
   .workflow { gap:7px }
   .workflow a { padding:7px 10px; font-size:13px }
