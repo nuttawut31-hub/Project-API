@@ -4,20 +4,20 @@
 
 ## โครงสร้างสำหรับรีวิว
 
-| ตำแหน่ง | หน้าที่ |
-| --- | --- |
-| `backend/src/index.js` | Route สาขา สมาชิก การสมัคร สภาพอากาศ และ Swagger UI |
-| `backend/src/auth.js` | Login, ตรวจ JWT และจำกัดสิทธิ์ admin |
-| `backend/src/services/` | เรียก Open-Meteo พร้อม timeout/retry/fallback |
-| `backend/db.js` | MySQL connection pool อ่านค่าจาก `.env` |
-| `backend/migrate.js`, `backend/migrations/` | Migration แบบรันซ้ำได้; 001 สร้างข้อมูลหลัก, 002 สร้างบัญชีผู้ใช้ |
-| `backend/scripts/` | สร้างบัญชี, ตรวจ migration/flow บนฐานข้อมูลทดสอบ, อัปเดตสัญญา API |
-| `backend/tests/` | Jest/Supertest ครอบคลุม API; jsdom ตรวจสถานะหน้าเว็บ |
-| `backend/openapi.yaml`, `backend/postman_collection.json` | สัญญา API และชุด request สำหรับสาธิต |
-| `frontend/` | หน้าเว็บ, CSS, fetch API, สถานะโหลด/สำเร็จ/ผิดพลาด |
-| `docs/` | เกณฑ์งาน, ERD, architecture, coverage, checklist และคู่มือ Demo |
-| `lesson/` | เอกสารและ ZIP แล็บต้นทางจากอาจารย์ |
-| `submissions/` | ZIP สำหรับส่งงาน |
+| ตำแหน่ง                                                   | หน้าที่                                                           |
+| --------------------------------------------------------- | ----------------------------------------------------------------- |
+| `backend/src/index.js`                                    | Route สาขา สมาชิก การสมัคร สภาพอากาศ และ Swagger UI               |
+| `backend/src/auth.js`                                     | Login, ตรวจ JWT และจำกัดสิทธิ์ admin                              |
+| `backend/src/services/`                                   | เรียก Open-Meteo พร้อม timeout/retry/fallback                     |
+| `backend/db.js`                                           | MySQL connection pool อ่านค่าจาก `.env`                           |
+| `backend/migrate.js`, `backend/migrations/`               | Migration แบบรันซ้ำได้; 001 สร้างข้อมูลหลัก, 002 สร้างบัญชีผู้ใช้ |
+| `backend/scripts/`                                        | สร้างบัญชี, ตรวจ migration/flow บนฐานข้อมูลทดสอบ, อัปเดตสัญญา API |
+| `backend/tests/`                                          | Jest/Supertest ครอบคลุม API; jsdom ตรวจสถานะหน้าเว็บ              |
+| `backend/openapi.yaml`, `backend/postman_collection.json` | สัญญา API และชุด request สำหรับสาธิต                              |
+| `frontend/`                                               | หน้าเว็บ, CSS, fetch API, สถานะโหลด/สำเร็จ/ผิดพลาด                |
+| `docs/`                                                   | เกณฑ์งาน, ERD, architecture, coverage, checklist และคู่มือ Demo   |
+| `lesson/`                                                 | เอกสารและ ZIP แล็บต้นทางจากอาจารย์                                |
+| `submissions/`                                            | ZIP สำหรับส่งงาน                                                  |
 
 `backend/index.js` เป็นไฟล์เดิมจากระยะก่อน; คำสั่ง `npm start` ใช้ `backend/src/index.js` โค้ดที่แก้มีคอมเมนต์ภาษาไทยอธิบายหน้าที่และเหตุผลที่สำคัญ
 
