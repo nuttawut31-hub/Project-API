@@ -253,11 +253,13 @@ main {
 }
 .form-card input,.subscribe input,.subscribe select {
   width:100%;
-  padding:11px 12px;
+  padding:11px 16px;
   border:1px solid #ccd8ce;
   border-radius:8px;
   background:#fafcf9
 }
+/* เผื่อพื้นที่ไอคอนของ select เพื่อไม่ให้ข้อความและลูกศรชิดขอบช่อง */
+.subscribe select { padding-right:36px }
 .form-card input:focus,.subscribe input:focus,.subscribe select:focus {
   outline:2px solid #60b785
 }
@@ -301,11 +303,12 @@ table {
 /* สัดส่วนคอลัมน์ขยายตามหน้าจอ แต่กันพื้นที่ปุ่มไว้คงที่เมื่อเลือกสถานะ */
 #membership-table { table-layout:fixed; min-width:1100px }
 #membership-table th:nth-child(1),#membership-table td:nth-child(1) { width:18% }
-#membership-table th:nth-child(2),#membership-table td:nth-child(2) { width:19% }
-#membership-table th:nth-child(3),#membership-table td:nth-child(3) { width:25% }
-#membership-table th:nth-child(4),#membership-table td:nth-child(4) { width:12% }
-#membership-table th:nth-child(5),#membership-table td:nth-child(5) { width:26% }
-#membership-table th,#membership-table td { padding:13px 16px }
+#membership-table th:nth-child(2),#membership-table td:nth-child(2) { width:18% }
+#membership-table th:nth-child(3),#membership-table td:nth-child(3) { width:23% }
+#membership-table th:nth-child(4),#membership-table td:nth-child(4) { width:11% }
+#membership-table th:nth-child(5),#membership-table td:nth-child(5) { width:30% }
+/* ระยะในเซลล์เพิ่มขึ้น โดยสงวนคอลัมน์ท้ายไว้ให้ปุ่มบันทึก/ยกเลิกไม่ดันตาราง */
+#membership-table th,#membership-table td { padding:13px 20px }
 th,td {
   padding:17px 20px;
   border-bottom:1px solid #edf0eb;
@@ -363,7 +366,7 @@ select {
 .inline-feedback.ok { background:#e3f4e7; color:#126b48 }
 .inline-feedback[hidden],.locked-hint[hidden] { display:none }
 .status-actions { display:flex; align-items:center; gap:7px; flex-wrap:nowrap; min-height:36px }
-.status-actions select { flex:0 0 112px }
+.status-actions select { flex:0 0 128px; padding:7px 28px 7px 12px }
 .status-actions button { padding:7px 10px; border-radius:7px; border:1px solid #cbd9cd; background:#fff; color:#173e2d; font-weight:700 }
 .status-actions button.save { background:#126b48; color:#fff; border-color:#126b48 }
 .status-actions button.undo { color:#126b48; border-color:#b8d4c2 }
