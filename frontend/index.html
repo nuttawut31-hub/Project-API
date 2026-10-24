@@ -288,6 +288,14 @@
                 required
                 maxlength="20"
             /></label>
+            <label
+              >ละติจูด <small>(ไม่บังคับ ใช้สำหรับสภาพอากาศ)</small>
+              <input name="latitude" type="number" min="-90" max="90" step="any" />
+            </label>
+            <label
+              >ลองจิจูด <small>(ไม่บังคับ ใช้สำหรับสภาพอากาศ)</small>
+              <input name="longitude" type="number" min="-180" max="180" step="any" />
+            </label>
             <div class="form-actions">
               <button type="submit">บันทึกสาขา</button
               ><button type="button" id="gym-cancel" hidden>
@@ -306,29 +314,24 @@
       </section>
       <!-- ข้อมูลอากาศเป็นเครื่องมือเสริม จึงวางหลังงานสมัครสมาชิกหลัก -->
       <section id="weather" class="section weather-panel">
-        <div class="section-head"><h2>สภาพอากาศ</h2></div>
-        <div class="query-bar">
-          <label
-            >ละติจูด<input
-              id="weather-lat"
-              type="number"
-              min="-90"
-              max="90"
-              step="any"
-              value="13.7563" /></label
-          ><label
-            >ลองจิจูด<input
-              id="weather-lon"
-              type="number"
-              min="-180"
-              max="180"
-              step="any"
-              value="100.5018" /></label
-          ><button type="button" id="weather-reload">ดูสภาพอากาศ</button>
+        <div class="section-head">
+          <div>
+            <h2>สภาพอากาศใกล้สาขา</h2>
+            <p>ข้อมูลปัจจุบันจาก Open-Meteo</p>
+          </div>
         </div>
-        <p id="weather-result" role="status" aria-live="polite">
-          กดดูสภาพอากาศเพื่อโหลดข้อมูลล่าสุด
-        </p>
+        <div class="weather-controls">
+          <label for="weather-gym">เลือกสาขา</label>
+          <select id="weather-gym" aria-describedby="weather-help">
+            <option value="">กำลังโหลดรายชื่อสาขา...</option>
+          </select>
+          <button type="button" id="weather-reload">ดูสภาพอากาศ</button>
+        </div>
+        <p id="weather-help" class="weather-help">สาขาต้องมีพิกัดก่อนจึงจะแสดงสภาพอากาศได้</p>
+        <button type="button" id="weather-edit-gym" hidden>เพิ่มพิกัดสาขานี้</button>
+        <div id="weather-result" class="weather-result" role="status" aria-live="polite">
+          เลือกสาขาแล้วกด “ดูสภาพอากาศ” เพื่อโหลดข้อมูลล่าสุด
+        </div>
       </section>
     </main>
     <footer>FitLife Management · <a href="/api-docs">เอกสาร API</a></footer>

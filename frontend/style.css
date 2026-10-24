@@ -440,7 +440,16 @@ footer {
 .member-detail-grid dt { color:#607a67; font-size:12px; font-weight:700 }
 .member-detail-grid dd { margin:3px 0 0; overflow-wrap:anywhere; font-size:14px; font-weight:700 }
 .weather-panel { margin-top:0 }
-.weather-panel p { margin:0; color:#435b4c }
+.weather-panel .section-head p { margin:4px 0 0; color:var(--muted); font-size:14px }
+.weather-controls { display:flex; align-items:end; flex-wrap:wrap; gap:10px }
+.weather-controls label { display:grid; gap:5px; min-width:min(100%,280px); color:#385a46; font-size:13px; font-weight:700 }
+.weather-controls select { min-height:42px; padding:8px 36px 8px 12px; border:1px solid #ccd8ce; border-radius:8px; background:#fff; color:var(--ink); font:inherit }
+.weather-controls button,#weather-edit-gym { min-height:42px; padding:8px 14px; border:1px solid #cbd9cd; border-radius:8px; background:#fff; color:#24543b; font-weight:700 }
+.weather-controls button:disabled { opacity:.65 }
+.weather-help { margin:9px 0 0; color:var(--muted); font-size:13px }
+.weather-result { margin-top:14px; min-height:52px; padding:14px 16px; border-radius:10px; background:#f1f7f1; color:#244936; line-height:1.6 }
+.weather-result.error { background:#fff3ed; color:#8f3f20 }
+#weather-edit-gym { margin-top:10px }
 .query-bar { display:flex; align-items:end; flex-wrap:wrap; gap:10px; margin:0 0 16px }
 .query-bar label { display:grid; gap:5px; font-size:13px; font-weight:700; color:#385a46 }
 .query-bar input { max-width:200px; min-height:40px; padding:8px 10px; border:1px solid #ccd8ce; border-radius:8px }

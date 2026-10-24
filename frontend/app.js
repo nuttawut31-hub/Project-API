@@ -16,6 +16,7 @@ let editingGymId = null;
 let editingMemberId = null;
 let maxFee = "";
 let selectedGymId = null;
+let weatherGymRows = [];
 
 // แสดงวันที่ในรูปแบบไทย โดยตีความวันที่จากฐานข้อมูลเป็นวันปฏิทิน UTC เพื่อไม่ให้วันเลื่อนตาม timezone
 function formatThaiDate(value) {
@@ -70,6 +71,35 @@ function localMessage(selector, text, ok = false) {
   target.textContent = text;
   target.hidden = false;
   target.classList.toggle("ok", ok);
+}
+
+// ใช้รายการสาขาทั้งหมดสำหรับตัวเลือกอากาศ แม้การ์ดสาขาจะถูกกรองอยู่
+function syncWeatherGyms(gyms) {
+  weatherGymRows = gyms;
+  const select = $("#weather-gym");
+  const previous = select.value;
+  select.replaceChildren(el("option", "", gyms.length ? "เลือกสาขา" : "ยังไม่มีสาขา"));
+  select.firstChild.value = "";
+  for (const gym of gyms) {
+    const option = el("option", "", gym.name);
+    option.value = String(gym.id);
+    select.append(option);
+  }
+  select.disabled = gyms.length === 0;
+  select.value = gyms.some((gym) => String(gym.id) === previous) ? previous : String(gyms[0]?.id || "");
+  refreshWeatherPrompt();
+}
+
+// แจ้งขั้นตอนตั้งค่าพิกัดที่สาขาเลือก โดยไม่ประมาณตำแหน่งจากที่อยู่
+function refreshWeatherPrompt() {
+  const gym = weatherGymRows.find((item) => String(item.id) === $("#weather-gym").value);
+  const hasCoordinates = gym && gym.latitude != null && gym.longitude != null;
+  $("#weather-help").textContent = !gym
+    ? "เพิ่มสาขาก่อนจึงจะดูสภาพอากาศได้"
+    : hasCoordinates
+      ? "เลือกสาขาแล้วกดดูสภาพอากาศเพื่อโหลดข้อมูลล่าสุด"
+      : "สาขานี้ยังไม่มีพิกัด กรุณาเข้าสู่ระบบแล้วเพิ่มพิกัดในหน้าแก้ไขสาขา";
+  $("#weather-edit-gym").hidden = !gym || hasCoordinates || !currentUser;
 }
 
 // การลบทำได้เฉพาะ Admin; ยืนยันผลกระทบก่อนเรียก API และโหลดข้อมูลที่เหลือใหม่
@@ -175,6 +205,8 @@ function renderGyms(gyms) {
           ["รหัสสาขา", `#${result.data.id}`], ["ที่อยู่", result.data.address],
           ["โทรศัพท์", result.data.phone_number],
           ["ค่าบริการ", `${Number(result.data.monthly_fee).toLocaleString("th-TH")} บาท/เดือน`],
+          ["พิกัด", result.data.latitude == null || result.data.longitude == null
+            ? "ยังไม่ได้ระบุ" : `${result.data.latitude}, ${result.data.longitude}`],
         ];
         const list = $("#gym-detail-fields");
         list.replaceChildren();
@@ -328,7 +360,7 @@ async function editGym(id) {
     editingGymId = id;
     $("#gym-entry").open = true;
     const form = $("#gym-form");
-    for (const key of ["name", "address", "monthly_fee", "phone_number"]) form.elements[key].value = data[key] ?? "";
+    for (const key of ["name", "address", "monthly_fee", "phone_number", "latitude", "longitude"]) form.elements[key].value = data[key] ?? "";
     $("#gym-form-title").textContent = `แก้ไขสาขา ${data.name}`;
     $("#gym-cancel").hidden = false;
     $("#gym-entry").scrollIntoView({ behavior: "smooth", block: "center" });
@@ -469,6 +501,7 @@ async function load() {
     memberRows = members.data;
     membershipRows = memberships.data;
     gymRows = gyms.data;
+    syncWeatherGyms(allGyms.data);
     filterVisibleGyms();
     fillChoices("gym_id", allGyms.data.map((gym) => ({ id: gym.id, label: gym.name })), "เลือกสาขา");
     fillChoices("member_id", members.data.map((member) => ({ id: member.id, label: member.full_name })), "เลือกสมาชิก");
@@ -517,6 +550,14 @@ $("#gym-form").addEventListener("submit", async (event) => {
   if (!form.reportValidity()) return;
   const values = Object.fromEntries(new FormData(form));
   values.monthly_fee = Number(values.monthly_fee);
+  const hasLatitude = values.latitude.trim() !== "";
+  const hasLongitude = values.longitude.trim() !== "";
+  if (hasLatitude !== hasLongitude) {
+    localMessage("#gym-feedback", "กรุณากรอกละติจูดและลองจิจูดให้ครบทั้งคู่");
+    return;
+  }
+  values.latitude = hasLatitude ? Number(values.latitude) : null;
+  values.longitude = hasLongitude ? Number(values.longitude) : null;
   const button = form.querySelector('[type="submit"]');
   button.disabled = true;
   try {
@@ -532,20 +573,68 @@ $("#gym-form").addEventListener("submit", async (event) => {
 $("#gym-cancel").addEventListener("click", resetGymForm);
 $("#member-cancel").addEventListener("click", resetMemberForm);
 
-// External API อาจใช้ fallback; แสดงที่มาและข้อความที่ backend ส่งกลับอย่างตรงไปตรงมา
+const weatherDescriptions = {
+  0: "ท้องฟ้าแจ่มใส", 1: "ท้องฟ้าเกือบแจ่มใส", 2: "มีเมฆบางส่วน", 3: "เมฆมาก",
+  45: "มีหมอก", 48: "มีหมอกจับตัวเป็นน้ำแข็ง", 51: "ฝนปรอยเล็กน้อย", 53: "ฝนปรอย",
+  55: "ฝนปรอยหนัก", 56: "ฝนเยือกแข็งเล็กน้อย", 57: "ฝนเยือกแข็ง", 61: "ฝนเล็กน้อย",
+  63: "ฝนปานกลาง", 65: "ฝนตกหนัก", 66: "ฝนเยือกแข็งเล็กน้อย", 67: "ฝนเยือกแข็งหนัก",
+  71: "หิมะเล็กน้อย", 73: "หิมะปานกลาง", 75: "หิมะตกหนัก", 77: "เกล็ดหิมะ",
+  80: "ฝนซู่เล็กน้อย", 81: "ฝนซู่ปานกลาง", 82: "ฝนซู่หนัก", 85: "หิมะตกเป็นช่วง",
+  86: "หิมะตกหนักเป็นช่วง", 95: "พายุฝนฟ้าคะนอง", 96: "พายุฝนฟ้าคะนองและลูกเห็บ",
+  99: "พายุฝนฟ้าคะนองและลูกเห็บหนัก",
+};
+
+$("#weather-gym").addEventListener("change", () => {
+  refreshWeatherPrompt();
+  const result = $("#weather-result");
+  result.classList.remove("error");
+  result.textContent = "เลือกสาขาแล้วกด “ดูสภาพอากาศ” เพื่อโหลดข้อมูลล่าสุด";
+});
+
+$("#weather-edit-gym").addEventListener("click", () => {
+  const gym = weatherGymRows.find((item) => String(item.id) === $("#weather-gym").value);
+  if (gym) editGym(gym.id);
+});
+
+// เรียก Open-Meteo ด้วยพิกัดสาขาที่เลือก และแสดง fallback โดยไม่ทำให้ flow หลักสะดุด
 $("#weather-reload").addEventListener("click", async () => {
   const target = $("#weather-result");
-  const lat = $("#weather-lat");
-  const lon = $("#weather-lon");
-  if (!lat.reportValidity() || !lon.reportValidity()) return;
+  const gym = weatherGymRows.find((item) => String(item.id) === $("#weather-gym").value);
+  if (!gym) {
+    target.textContent = "ยังไม่มีสาขาให้เลือก";
+    target.classList.add("error");
+    return;
+  }
+  if (gym.latitude == null || gym.longitude == null) {
+    target.textContent = "ยังดูสภาพอากาศไม่ได้ เพราะสาขานี้ไม่มีพิกัด";
+    target.classList.add("error");
+    refreshWeatherPrompt();
+    return;
+  }
+  const button = $("#weather-reload");
+  button.disabled = true;
+  target.classList.remove("error");
   target.textContent = "กำลังโหลดสภาพอากาศ...";
   try {
-    const { data } = await api(`/api/weather?lat=${encodeURIComponent(lat.value)}&lon=${encodeURIComponent(lon.value)}`);
+    const { data } = await api(`/api/weather?lat=${encodeURIComponent(gym.latitude)}&lon=${encodeURIComponent(gym.longitude)}`);
     const weather = data.weather;
-    target.textContent = weather.available
-      ? `อุณหภูมิ ${weather.temperature}°C · ลม ${weather.windspeed} กม./ชม. · Open-Meteo`
-      : weather.note || "บริการสภาพอากาศยังไม่พร้อม";
-  } catch (error) { target.textContent = error.message; }
+    if (!weather.available) {
+      target.textContent = weather.note || "บริการสภาพอากาศยังไม่พร้อม กรุณาลองใหม่ภายหลัง";
+      target.classList.add("error");
+      return;
+    }
+    const time = weather.time
+      ? new Intl.DateTimeFormat("th-TH", { dateStyle: "medium", timeStyle: "short" }).format(new Date(weather.time))
+      : "ไม่ทราบเวลา";
+    target.replaceChildren(
+      el("strong", "weather-condition", weatherDescriptions[weather.weathercode] || "สภาพอากาศปัจจุบัน"),
+      el("span", "weather-metrics", `อุณหภูมิ ${weather.temperature ?? "—"}°C · ลม ${weather.windspeed ?? "—"} กม./ชม.`),
+      el("small", "weather-updated", `${gym.name} · อัปเดต ${time} · Open-Meteo`),
+    );
+  } catch (error) {
+    target.textContent = error.message;
+    target.classList.add("error");
+  } finally { button.disabled = false; }
 });
 
 // รีเฟรชหน้าแล้วยังคง session เฉพาะเมื่อ API ยอมรับ token เดิม

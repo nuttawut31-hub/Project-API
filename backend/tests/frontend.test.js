@@ -92,3 +92,55 @@ test("gym detail button shows the selected branch inline and can close it", asyn
   expect(button.getAttribute("aria-expanded")).toBe("false");
   dom.window.close();
 });
+
+test("weather card loads current weather for the selected branch coordinates", async () => {
+  const gym = { id: 3, name: "FitLife Mega Bangna", address: "Bang Na", monthly_fee: "1350", latitude: 13.6, longitude: 100.7 };
+  const fetchImpl = jest.fn(async (url) => {
+    if (url === "/api/gyms") return json({ data: [gym] });
+    if (url.startsWith("/api/weather?")) return json({ data: { weather: {
+      available: true, temperature: 29, windspeed: 5, weathercode: 2, time: "2026-10-24T12:00",
+    } } });
+    return json({ data: [] });
+  });
+  const dom = page(fetchImpl);
+  await tick(); await tick();
+  const doc = dom.window.document;
+  expect(doc.querySelector("#weather-gym").value).toBe("3");
+  doc.querySelector("#weather-reload").click();
+  await tick(); await tick();
+  expect(fetchImpl).toHaveBeenCalledWith("/api/weather?lat=13.6&lon=100.7", expect.any(Object));
+  expect(doc.querySelector("#weather-result").textContent).toContain("มีเมฆบางส่วน");
+  expect(doc.querySelector("#weather-result").textContent).toContain("29°C");
+  expect(doc.querySelector("#weather-result").textContent).toContain("Open-Meteo");
+  dom.window.close();
+});
+
+test("weather card explains missing branch coordinates without calling the weather API", async () => {
+  const fetchImpl = jest.fn(async (url) => {
+    if (url === "/api/gyms") return json({ data: [{ id: 4, name: "FitLife Test", address: "Bangkok", monthly_fee: "1000" }] });
+    return json({ data: [] });
+  });
+  const dom = page(fetchImpl);
+  await tick(); await tick();
+  const doc = dom.window.document;
+  expect(doc.querySelector("#weather-help").textContent).toContain("ยังไม่มีพิกัด");
+  doc.querySelector("#weather-reload").click();
+  expect(doc.querySelector("#weather-result").textContent).toContain("ไม่มีพิกัด");
+  expect(fetchImpl.mock.calls.some(([url]) => String(url).startsWith("/api/weather"))).toBe(false);
+  dom.window.close();
+});
+
+test("weather card displays the service fallback without breaking the dashboard", async () => {
+  const fetchImpl = jest.fn(async (url) => {
+    if (url === "/api/gyms") return json({ data: [{ id: 5, name: "FitLife Test", address: "Bangkok", monthly_fee: "1000", latitude: 13.7, longitude: 100.6 }] });
+    if (url.startsWith("/api/weather?")) return json({ data: { weather: { available: false, note: "บริการสภาพอากาศไม่พร้อม" } } });
+    return json({ data: [] });
+  });
+  const dom = page(fetchImpl);
+  await tick(); await tick();
+  dom.window.document.querySelector("#weather-reload").click();
+  await tick(); await tick();
+  expect(dom.window.document.querySelector("#weather-result").textContent).toContain("บริการสภาพอากาศไม่พร้อม");
+  expect(dom.window.document.querySelector("#weather-result").classList.contains("error")).toBe(true);
+  dom.window.close();
+});
