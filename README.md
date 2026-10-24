@@ -58,6 +58,6 @@ npm run test:integration
 node scripts/check-demo-account.js
 ```
 
-Jest/Supertest mock SQL จึงไม่แตะฐานข้อมูลจริง ส่วน `test:integration` สร้างฐานข้อมูลทดสอบชื่อเฉพาะ รัน migration สองรอบ ทดสอบ flow HTTP บน MySQL จริง แล้วลบฐานข้อมูลทดสอบใน `finally` ข้อมูลเดิมใน `gym_db` ไม่ถูกลบ `check-demo-account.js` ตรวจ login/session/สาขาในฐานข้อมูลนำเสนอโดยไม่พิมพ์รหัส รายงาน coverage อยู่ที่ `docs/coverage-report.md`
+Jest/Supertest mock SQL จึงไม่แตะฐานข้อมูลจริง ส่วน `test:integration` สร้างฐานข้อมูลทดสอบชื่อเฉพาะ รัน migration สองรอบ ทดสอบ flow HTTP บน MySQL จริง แล้วลบฐานข้อมูลทดสอบใน `finally` ข้อมูลเดิมใน `gym_db` ไม่ถูกลบ Migration `003_gym_coordinates.sql` เพิ่มพิกัดแบบ nullable และ `004_demo_branch_coordinates.sql` เติมพิกัดให้สาขาตัวอย่างที่ยังไม่มีค่า; ข้อมูลสาธิตใน `backend/seed.sql` มีพิกัดตำแหน่งศูนย์การค้าสำหรับฐานข้อมูลใหม่ ส่วนสาขาที่เพิ่มใหม่ให้ผู้ดูแลกรอกพิกัดจริงผ่านหน้าแก้ไขสาขา เพื่อให้การ์ดสภาพอากาศค้นหาตำแหน่งได้ตรงสาขา `check-demo-account.js` ตรวจ login/session/สาขาในฐานข้อมูลนำเสนอโดยไม่พิมพ์รหัส รายงาน coverage อยู่ที่ `docs/coverage-report.md`
 
 ไฟล์ที่ใช้ประกอบการนำเสนอ: `docs/DEMO-GUIDE.md`, `docs/clo-requirements-checklist.md`, `docs/architecture-week13.md`, `docs/erd.pdf` และ PDF เกณฑ์อาจารย์ใน `docs/` เอกสารสัปดาห์ที่ 14 เรื่อง migration/scale เป็นแบบฝึกออกแบบ ไม่ใช่ฟีเจอร์ที่อ้างว่าส่งคะแนน
