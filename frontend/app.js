@@ -222,7 +222,10 @@ function renderMembers(members) {
     const main = el("div", "member-main");
     main.append(el("strong", "", member.full_name));
     main.append(el("small", "", member.email));
-    row.append(main, el("small", "member-id", `#${member.id}`));
+    row.append(main);
+    // รวมรหัสและปุ่มของสมาชิกไว้กลุ่มเดียว เพื่อไม่ให้ปุ่มแยกห่างกันบนจอมือถือ
+    const controls = el("div", "member-controls");
+    controls.append(el("small", "member-id", `#${member.id}`));
     const detail = el("button", "record-link", "ดูข้อมูล");
     detail.type = "button";
     const panel = el("div", "member-detail-panel");
@@ -262,12 +265,12 @@ function renderMembers(members) {
         panel.classList.add("error");
       } finally { detail.disabled = false; }
     });
-    row.append(detail);
+    controls.append(detail);
     if (currentUser) {
       const edit = el("button", "record-link", "แก้ไข");
       edit.type = "button";
       edit.addEventListener("click", () => editMember(member.id));
-      row.append(edit);
+      controls.append(edit);
     }
     if (currentUser?.role === "admin") {
       const remove = el("button", "row-delete", "ลบ");
@@ -277,8 +280,9 @@ function renderMembers(members) {
         `/api/members/${member.id}`, `สมาชิก ${member.full_name}`,
         "ประวัติการสมัครทั้งหมดของสมาชิกคนนี้จะถูกลบด้วย",
       ));
-      row.append(remove);
+      controls.append(remove);
     }
+    row.append(controls);
     item.append(row, panel);
     root.append(item);
   }

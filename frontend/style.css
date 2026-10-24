@@ -412,6 +412,8 @@ footer {
 .record-actions { margin-top:16px }
 .record-actions button,.record-link { font-size:12px }
 .member-row { align-items:center }
+.member-controls { display:flex; align-items:center; flex-wrap:wrap; gap:8px }
+.member-controls .member-id { margin-right:4px }
 .member-item { border-bottom:1px solid #edf0eb }
 .member-item:last-child { border-bottom:0 }
 .member-item .member-row { border-bottom:0 }
@@ -494,7 +496,14 @@ button:not(:disabled):active { transform:translateY(1px) }
 @media(max-width:1060px) { .cards { grid-template-columns:repeat(2,minmax(0,1fr)) } }
 @media(max-width:800px) { .hero { grid-template-columns:1fr } .cards { grid-template-columns:1fr } .split { grid-template-columns:1fr } .auth-card input { min-width:0; width:100% } .auth-card label { flex:1 1 210px } }
 @media(max-width:800px) { .gym-detail-grid { grid-template-columns:repeat(2,minmax(0,1fr)) } }
-@media(max-width:520px) { .hero { padding:24px 20px } .hero-card { min-width:0 } .management-form { grid-template-columns:1fr } .member-row { flex-wrap:wrap } .member-main { flex:1 1 calc(100% - 56px) } .member-id { margin-left:50px } .query-bar label { flex:1 1 100% } .query-bar input { max-width:none; width:100% } .query-bar button { flex:1 1 auto } }
+@media(max-width:520px) { .hero { padding:24px 20px } .hero-card { min-width:0 } .management-form { grid-template-columns:1fr } .query-bar label { flex:1 1 100% } .query-bar input { max-width:none; width:100% } .query-bar button { flex:1 1 auto } }
+/* มือถือ: ชื่ออยู่ข้างรูป ส่วนรหัสกับปุ่มอยู่บรรทัดถัดไปเป็นกลุ่มเดียว */
+@media(max-width:520px) {
+  .member-row { display:grid; grid-template-columns:38px minmax(0,1fr); gap:10px 12px; justify-content:initial }
+  .member-main { grid-column:2; min-width:0 }
+  .member-controls { grid-column:2; justify-self:start; gap:8px }
+  .member-controls button { min-height:44px }
+}
 @media(max-width:520px) { .member-detail-panel { padding-left:0 } .member-detail-grid { grid-template-columns:1fr } }
 @media(max-width:520px) { .gym-detail-grid { grid-template-columns:1fr } .gym-detail-heading { align-items:flex-start; flex-direction:column } }
 @media(prefers-reduced-motion:reduce) { html { scroll-behavior:auto } .workflow a { transition:none } }
