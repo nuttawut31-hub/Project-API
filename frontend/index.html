@@ -103,8 +103,11 @@
         <label>วันสิ้นสุด<input name="end_date" type="date" required></label>
         <button type="submit">สมัครแพ็กเกจ →</button>
       </form><p id="membership-feedback" class="inline-feedback" role="status" aria-live="polite" hidden></p></div>
-      <!-- ค้นหาแถวตามชื่อสมาชิก สาขา หรือสถานะ โดยไม่เรียก API ซ้ำ -->
-      <label class="search-field membership-search">ค้นหาการสมัคร<input id="membership-search" type="search" placeholder="ชื่อสมาชิก สาขา หรือสถานะ" autocomplete="off"></label>
+      <!-- ค้นหารายการหรือเลือกสาขาได้ตรงข้างตาราง และคืนทุกสาขาจากตัวเลือกแรก -->
+      <div class="membership-tools">
+        <label class="search-field membership-search">ค้นหาการสมัคร<input id="membership-search" type="search" placeholder="ชื่อสมาชิก สาขา หรือสถานะ" autocomplete="off"></label>
+        <label class="search-field membership-branch-filter">สาขาที่แสดง<select id="membership-gym-filter"><option value="">ทุกสาขา</option></select></label>
+      </div>
       <div class="table-wrap"><table id="membership-table">
         <thead><tr><th>สมาชิก</th><th>สาขา</th><th>ช่วงเวลา</th><th>สถานะ</th><th>ปรับสถานะ</th></tr></thead>
         <tbody id="membership-list"><tr><td colspan="5">กำลังโหลด...</td></tr></tbody>

@@ -121,7 +121,10 @@ main {
 .workflow a span { display:grid; place-items:center; width:24px; height:24px; border-radius:50%; background:#e4f3e8; color:#126b48; font-size:12px }
 .search-field { display:grid; gap:6px; margin:0 0 12px; color:#385a46; font-size:13px; font-weight:700 }
 .search-field input { width:100%; min-height:42px; padding:10px 12px; border:1px solid #ccd8ce; border-radius:8px; background:#fff; font:inherit; font-weight:400 }
-.membership-search { max-width:420px; margin-bottom:12px }
+.membership-tools { display:flex; align-items:end; flex-wrap:wrap; gap:12px; margin-bottom:12px }
+.membership-search { flex:1 1 320px; max-width:420px; margin:0 }
+.membership-branch-filter { flex:0 1 280px; margin:0 }
+.membership-tools select { width:100%; min-height:42px; padding:10px 38px 10px 12px; border:1px solid #ccd8ce; border-radius:8px; background-color:#fff }
 /* ส่วนข้อมูลหลัก: สาขา สมาชิก และแพ็กเกจ */
 .section {
   margin:0 0 42px
@@ -259,7 +262,7 @@ main {
   background:#fafcf9
 }
 /* ลูกศรของ native select อยู่ชิดขอบต่างกันตามเบราว์เซอร์ จึงกำหนดตำแหน่งเอง */
-.subscribe select,.status-actions select {
+.subscribe select,.status-actions select,.membership-tools select {
   appearance:none;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='m3 6 5 5 5-5' stroke='%2317362a' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat:no-repeat;

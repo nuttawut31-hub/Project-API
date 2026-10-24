@@ -32,8 +32,10 @@ function filterVisibleRows() {
   renderMembers(memberRows.filter((member) =>
     `${member.full_name} ${member.email}`.toLocaleLowerCase("th-TH").includes(memberQuery)));
   const membershipQuery = $("#membership-search").value.trim().toLocaleLowerCase("th-TH");
+  const selectedGymId = $("#membership-gym-filter").value;
   renderMemberships(membershipRows.filter((membership) =>
-    `${membership.member_name} ${membership.gym_name} ${statusLabels[membership.status] || membership.status}`
+    (!selectedGymId || String(membership.gym_id) === selectedGymId)
+    && `${membership.member_name} ${membership.gym_name} ${statusLabels[membership.status] || membership.status}`
       .toLocaleLowerCase("th-TH").includes(membershipQuery)));
 }
 
@@ -181,15 +183,13 @@ function renderGyms(gyms) {
     });
     const memberships = el("button", "", "การสมัครของสาขา");
     memberships.type = "button";
-    memberships.addEventListener("click", async () => {
-      try {
-        const result = await api(`/api/gyms/${gym.id}/memberships`);
-        membershipRows = result.data;
-        $("#membership-search").value = "";
-        filterVisibleRows();
-        message(`แสดงการสมัครของ ${gym.name} ${result.count} รายการ · กดรีเฟรชข้อมูลเพื่อดูทั้งหมด`, true);
-        $("#memberships").scrollIntoView({ behavior: "smooth" });
-      } catch (error) { message(error.message); }
+    memberships.addEventListener("click", () => {
+      // เลือกสาขาในตัวกรองเดียวกับตาราง แล้วเลื่อนไปยังจุดที่เห็นผลการกรองทันที
+      $("#membership-gym-filter").value = String(gym.id);
+      $("#membership-search").value = "";
+      filterVisibleRows();
+      $("#memberships").scrollIntoView({ behavior: "smooth", block: "start" });
+      $("#membership-gym-filter").focus({ preventScroll: true });
     });
     actions.append(detail, memberships);
     if (currentUser) {
@@ -350,7 +350,8 @@ function renderMemberships(memberships) {
   root.replaceChildren();
   if (!memberships.length) {
     const row = el("tr");
-    const cell = el("td", "", $("#membership-search").value ? "ไม่พบรายการสมัครที่ค้นหา" : "ยังไม่มีข้อมูลการสมัคร");
+    const hasFilter = $("#membership-search").value || $("#membership-gym-filter").value;
+    const cell = el("td", "", hasFilter ? "ไม่พบรายการสมัครที่ตรงกับตัวกรอง" : "ยังไม่มีข้อมูลการสมัคร");
     cell.colSpan = 5;
     row.append(cell);
     return root.append(row);
@@ -449,9 +450,19 @@ async function load() {
     memberRows = members.data;
     membershipRows = memberships.data;
     renderGyms(gyms.data);
-    filterVisibleRows();
     fillChoices("gym_id", allGyms.data.map((gym) => ({ id: gym.id, label: gym.name })), "เลือกสาขา");
     fillChoices("member_id", members.data.map((member) => ({ id: member.id, label: member.full_name })), "เลือกสมาชิก");
+    const gymFilter = $("#membership-gym-filter");
+    const selectedGymId = gymFilter.value;
+    gymFilter.replaceChildren(el("option", "", "ทุกสาขา"));
+    gymFilter.firstChild.value = "";
+    for (const gym of allGyms.data) {
+      const option = el("option", "", gym.name);
+      option.value = gym.id;
+      gymFilter.append(option);
+    }
+    gymFilter.value = selectedGymId;
+    filterVisibleRows();
     $("#summary").textContent = `${gyms.data.length} สาขา · ${members.data.length} สมาชิก${maxFee === "" ? "" : " (กรองราคา)"}`;
   } catch (error) {
     message(error.message);
@@ -566,6 +577,7 @@ $("#apply-fee").addEventListener("click", () => {
 $("#clear-fee").addEventListener("click", () => { $("#max-fee").value = ""; maxFee = ""; load(); });
 $("#member-search").addEventListener("input", filterVisibleRows);
 $("#membership-search").addEventListener("input", filterVisibleRows);
+$("#membership-gym-filter").addEventListener("change", filterVisibleRows);
 
 // สร้างแพ็กเกจสมาชิก: ตรวจช่วงวันก่อน POST /api/memberships
 $("#membership-form").addEventListener("submit", async (event) => {
