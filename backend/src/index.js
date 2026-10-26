@@ -109,7 +109,7 @@ app.use("/api", (req, res, next) => {
 //  GYMS
 // ══════════════════════════════════════════════
 
-// GET /api/gyms  — ดูทั้งหมด (รองรับ ?max_fee=<number>)
+// GET /api/gyms — อ่านสาขาทั้งหมดหรือกรองด้วยค่าบริการสูงสุด; ผลลัพธ์คือ 200
 app.get("/api/gyms", async (req, res) => {
   try {
     // query string ใช้กรองสาขาตามค่าบริการสูงสุด
@@ -149,7 +149,7 @@ app.get("/api/gyms", async (req, res) => {
   }
 });
 
-// POST /api/gyms  — เพิ่มสาขาใหม่
+// POST /api/gyms — ตรวจข้อมูลแล้วสร้างสาขาใหม่; ข้อมูลไม่ครบ/ผิดตอบ 400 และสำเร็จตอบ 201
 app.post("/api/gyms", async (req, res) => {
   try {
     // ข้อมูลสาขาใหม่มาจาก JSON body; พิกัดเป็นข้อมูลเสริม
@@ -206,7 +206,7 @@ app.post("/api/gyms", async (req, res) => {
   }
 });
 
-// GET /api/gyms/:id  — ดูสาขาตาม ID
+// GET /api/gyms/:id — อ่านสาขาจาก ID; ถ้าไม่มีข้อมูลตอบ 404
 app.get("/api/gyms/:id", async (req, res) => {
   try {
     // :id เป็น path parameter เช่น /api/gyms/2
@@ -227,7 +227,7 @@ app.get("/api/gyms/:id", async (req, res) => {
   }
 });
 
-// PUT /api/gyms/:id  — แก้ไขสาขา
+// PUT /api/gyms/:id — ตรวจและแก้ข้อมูลสาขาที่มีอยู่; ถ้าไม่พบตอบ 404
 app.put("/api/gyms/:id", async (req, res) => {
   try {
     // PUT รับข้อมูลชุดใหม่ของสาขาและตรวจค่าก่อนแก้ฐานข้อมูล
@@ -301,7 +301,7 @@ app.put("/api/gyms/:id", async (req, res) => {
   }
 });
 
-// DELETE /api/gyms/:id  — ลบสาขา
+// DELETE /api/gyms/:id — ลบสาขา; middleware บังคับ admin และฐานข้อมูลลบรายการลูกแบบ cascade
 app.delete("/api/gyms/:id", async (req, res) => {
   try {
     // ตรวจว่ามีสาขาก่อนลบ; สิทธิ์ admin ถูกตรวจโดย middleware กลางด้านบน
@@ -323,7 +323,7 @@ app.delete("/api/gyms/:id", async (req, res) => {
   }
 });
 
-// GET /api/gyms/:gymId/memberships  — ดูประวัติสมาชิกของสาขา
+// GET /api/gyms/:gymId/memberships — JOIN ข้อมูลสมาชิกและการสมัครของสาขาที่ระบุ
 app.get("/api/gyms/:gymId/memberships", async (req, res) => {
   try {
     // ตรวจสาขาก่อน แล้ว JOIN เพื่อได้ทั้งข้อมูลสมัครและชื่อสมาชิก/สาขา
@@ -362,7 +362,7 @@ app.get("/api/gyms/:gymId/memberships", async (req, res) => {
 //  MEMBERS
 // ══════════════════════════════════════════════
 
-// GET /api/members
+// GET /api/members — อ่านรายชื่อสมาชิกทั้งหมด เรียงตาม ID
 app.get("/api/members", async (req, res) => {
   try {
     // คืนสมาชิกทั้งหมดเรียงตาม ID เพื่อให้ลำดับผลลัพธ์คงที่
@@ -378,7 +378,7 @@ app.get("/api/members", async (req, res) => {
   }
 });
 
-// POST /api/members
+// POST /api/members — ตรวจฟิลด์และอีเมลซ้ำ (409) ก่อนสร้างสมาชิกใหม่
 app.post("/api/members", async (req, res) => {
   try {
     // ข้อมูลสมาชิกที่ส่งมาจากฟอร์มอยู่ใน JSON body
@@ -447,7 +447,7 @@ app.get("/api/members/:id", async (req, res) => {
   }
 });
 
-// PUT /api/members/:id
+// PUT /api/members/:id — ตรวจข้อมูลและแก้ไขสมาชิกตาม ID
 app.put("/api/members/:id", async (req, res) => {
   try {
     // รับข้อมูลสมาชิกชุดใหม่ ตรวจว่ามีรหัสนี้ก่อน UPDATE
@@ -489,7 +489,7 @@ app.put("/api/members/:id", async (req, res) => {
   }
 });
 
-// DELETE /api/members/:id
+// DELETE /api/members/:id — ลบสมาชิก; จำกัด admin และประวัติสมัครที่ผูกไว้อาจถูกลบแบบ cascade
 app.delete("/api/members/:id", async (req, res) => {
   try {
     // การลบถูกจำกัดเป็น admin โดย middleware; foreign key อาจลบประวัติสมัครที่ผูกอยู่ด้วย
@@ -516,7 +516,7 @@ app.delete("/api/members/:id", async (req, res) => {
 //  MEMBERSHIPS
 // ══════════════════════════════════════════════
 
-// GET /api/memberships
+// GET /api/memberships — อ่านประวัติสมัครพร้อมชื่อสมาชิกและชื่อสาขาจาก JOIN
 app.get("/api/memberships", async (req, res) => {
   try {
     // JOIN เติมชื่อสมาชิกและชื่อสาขาให้หน้าเว็บ ไม่ต้องแสดงแต่ foreign key
@@ -539,7 +539,7 @@ app.get("/api/memberships", async (req, res) => {
   }
 });
 
-// POST /api/memberships
+// POST /api/memberships — ตรวจสมาชิก/สาขา/วัน/สถานะ แล้วสร้างรายการสมัคร
 app.post("/api/memberships", async (req, res) => {
   try {
     // การสมัครเชื่อม member กับ gym พร้อมช่วงวันที่และสถานะเริ่มต้น
@@ -619,7 +619,7 @@ app.post("/api/memberships", async (req, res) => {
   }
 });
 
-// PUT /api/memberships/:id/status  — อัปเดตสถานะ
+// PUT /api/memberships/:id/status — เปลี่ยนสถานะของรายการสมัครที่ระบุ
 app.put("/api/memberships/:id/status", async (req, res) => {
   try {
     // เปลี่ยนเฉพาะสถานะของรายการสมัครที่มีอยู่ โดยรับสถานะใหม่จาก JSON body

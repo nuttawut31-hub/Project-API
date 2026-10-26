@@ -607,6 +607,7 @@ const weatherDescriptions = {
   99: "พายุฝนฟ้าคะนองและลูกเห็บหนัก",
 };
 
+// เปลี่ยนสาขาแล้วล้างผลเก่า เพื่อไม่ให้ผู้ใช้เข้าใจว่าเป็นอากาศของสาขาใหม่
 $("#weather-gym").addEventListener("change", () => {
   refreshWeatherPrompt();
   const result = $("#weather-result");
@@ -614,6 +615,7 @@ $("#weather-gym").addEventListener("change", () => {
   result.textContent = "เลือกสาขาแล้วกด “ดูสภาพอากาศ” เพื่อโหลดข้อมูลล่าสุด";
 });
 
+// ถ้าสาขายังไม่มีพิกัด ปุ่มนี้พาไปกรอกพิกัดในฟอร์มแก้ไขสาขา
 $("#weather-edit-gym").addEventListener("click", () => {
   const gym = weatherGymRows.find((item) => String(item.id) === $("#weather-gym").value);
   if (gym) editGym(gym.id);
@@ -676,6 +678,7 @@ async function restoreSession() {
 $("#member-form").addEventListener("submit", async (event) => {
   event.preventDefault();
   const form = event.currentTarget;
+  // ใช้ validation ของ HTML ก่อนส่ง request; reportValidity แสดงข้อความที่ช่องกรอก
   if (!form.reportValidity()) return;
   const button = form.querySelector("button");
   const values = Object.fromEntries(new FormData(form));
@@ -706,11 +709,13 @@ $("#member-form").addEventListener("submit", async (event) => {
 $("#reload").addEventListener("click", load);
 // ค่ากรองส่งไปยัง GET /api/gyms?max_fee ตาม OpenAPI; ล้างค่าแล้วโหลดทั้งหมดกลับมา
 $("#apply-fee").addEventListener("click", () => {
+  // กรองราคาเรียก API ใหม่ เพราะต้องให้ฐานข้อมูลเลือกสาขาตามราคา
   if (!$("#max-fee").reportValidity()) return;
   maxFee = $("#max-fee").value;
   load();
 });
 $("#clear-fee").addEventListener("click", () => { $("#max-fee").value = ""; maxFee = ""; load(); });
+// ค้นชื่อบนข้อมูลที่โหลดมาแล้ว จึงไม่ส่ง request ทุกครั้งที่พิมพ์
 $("#gym-search").addEventListener("input", filterVisibleGyms);
 $("#member-search").addEventListener("input", filterVisibleRows);
 $("#membership-search").addEventListener("input", filterVisibleRows);
@@ -720,6 +725,7 @@ $("#membership-gym-filter").addEventListener("change", filterVisibleRows);
 $("#membership-form").addEventListener("submit", async (event) => {
   event.preventDefault();
   const form = event.currentTarget;
+  // ตรวจช่องที่จำเป็นจาก HTML และตรวจวันสิ้นสุดไม่ให้ก่อนวันเริ่มต้น
   if (!form.reportValidity()) return;
   const values = Object.fromEntries(new FormData(form));
   if (values.end_date < values.start_date) return localMessage("#membership-feedback", "วันสิ้นสุดต้องไม่ก่อนวันเริ่มต้น");
