@@ -2,10 +2,11 @@
 
 ## ก่อนเริ่ม
 
-1. เปิด MySQL และตรวจว่า `backend/.env` ชี้ฐานข้อมูลนำเสนอ หากฐานข้อมูลยังไม่มีข้อมูล ให้นำเข้า `backend/seed.sql` เพียงครั้งเดียว; migration 003–004 เพิ่มคอลัมน์และพิกัดตัวอย่างโดยรักษาข้อมูลสาขาเดิม
-2. ใน `backend/` เตรียม dependency ด้วย `npm ci`, รัน `npm run db:migrate`, สร้างบัญชีด้วย `npm run user:demo` แล้วเปิดเซิร์ฟเวอร์ด้วย `npm start`
-3. เตรียมอีเมลสมาชิกใหม่ที่ไม่ซ้ำและอ่านข้อมูล staff จาก `backend/.demo-credentials` ล่วงหน้า ห้ามเปิดไฟล์รหัสผ่านบนจอที่แชร์
-4. เปิด `/app/`, `/api-docs`, `docs/coverage-report.md` และ `docs/architecture-week13.md` ไว้ล่วงหน้า ซ้อมด้วยเครื่องและเครือข่ายที่จะใช้จริง
+1. เปิด MySQL และตรวจว่า `.env` ชี้ฐานข้อมูลนำเสนอ หากทำงานจาก repository ไฟล์จะอยู่ที่ `backend/.env`; หากแตก ZIP ส่งงาน ไฟล์จะอยู่ที่โฟลเดอร์หลัก ห้ามนำ `.env` ใส่ใน ZIP
+2. เข้าโฟลเดอร์ที่มี `package.json` (`backend/` ใน repository หรือโฟลเดอร์หลักของ ZIP) แล้วรัน `npm ci`, `npm run db:migrate`, `npm run user:demo` และ `npm start`
+3. หากฐานข้อมูลยังไม่มีข้อมูล ให้นำเข้า `seed.sql` เพียงครั้งเดียว; migration 003–004 เพิ่มคอลัมน์และพิกัดตัวอย่างโดยรักษาข้อมูลสาขาเดิม
+4. เตรียมอีเมลสมาชิกใหม่ที่ไม่ซ้ำและอ่านข้อมูล staff จาก `.demo-credentials` ล่วงหน้า ห้ามเปิดไฟล์รหัสผ่านบนจอที่แชร์
+5. เปิด `/app/`, `/api-docs`, `coverage-report.md` และ `architecture-week13.md` ไว้ล่วงหน้า ซ้อมด้วยเครื่องและเครือข่ายที่จะใช้จริง
 
 ## ลำดับพูดและคลิก
 
@@ -26,11 +27,11 @@
 
 ## โค้ดที่ควรเปิดเมื่อถูกถาม
 
-- `backend/src/auth.js`: bcrypt เปรียบเทียบ hash, JWT อายุ 2 ชั่วโมง, ตรวจบัญชีซ้ำ, admin เท่านั้นที่ลบ
-- `backend/src/index.js`: route และ SQL แบบใช้ `?`, ตรวจข้อมูลก่อนบันทึก
-- `backend/migrate.js` กับ `migrations/002_auth.sql`, `003_gym_coordinates.sql`, `004_demo_branch_coordinates.sql`: เพิ่มบัญชีและพิกัดโดยเก็บข้อมูลสาขาเดิม
+- `src/auth.js`: bcrypt เปรียบเทียบ hash, JWT อายุ 2 ชั่วโมง, ตรวจบัญชีซ้ำ, admin เท่านั้นที่ลบ
+- `src/index.js`: route และ SQL แบบใช้ `?`, ตรวจข้อมูลก่อนบันทึก
+- `migrate.js` กับ `migrations/002_auth.sql`, `003_gym_coordinates.sql`, `004_demo_branch_coordinates.sql`: เพิ่มบัญชีและพิกัดโดยเก็บข้อมูลสาขาเดิม
 - `frontend/app.js`: `api()` แนบ token, `load()` โหลดข้อมูลหลัก, ฟอร์มส่ง POST/PUT, ตัวเลือกสถานะต้องกด “บันทึก” จึงส่ง PUT และ “คืนค่าเดิม” ส่ง PUT กลับสถานะก่อนหน้า; ส่วนอากาศเรียก API ด้วยพิกัดสาขา
-- `backend/tests/api.test.js`: Supertest ทดสอบ 200/201/400/401/403/500; `tests/frontend.test.js` ตรวจ loading/success/error; `scripts/integration-check.js` ตรวจ MySQL จริง
+- `tests/api.test.js`: Supertest ทดสอบ 200/201/400/401/403/500; `tests/frontend.test.js` ตรวจ loading/success/error; `scripts/integration-check.js` ตรวจ MySQL จริง
 
 ## คำตอบสั้นสำหรับคำถามที่พบบ่อย
 

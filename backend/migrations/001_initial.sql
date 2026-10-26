@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS members (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
--- Foreign key ใช้ CASCADE เพื่อไม่ให้เหลือการสมัครที่อ้างถึงสมาชิก/สาขาที่ถูกลบ
+-- Foreign key ใช้ ON DELETE CASCADE หมายถึง เมื่อลบสมาชิกหรือสาขา รายการสมัครที่อ้างถึงข้อมูลนั้นจะถูกลบตาม เพื่อไม่ให้มีข้อมูลกำพร้า
 CREATE TABLE IF NOT EXISTS memberships (
     id INT AUTO_INCREMENT PRIMARY KEY,
     member_id INT NOT NULL,
