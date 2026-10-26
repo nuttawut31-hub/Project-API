@@ -1,39 +1,64 @@
+// Express รับ HTTP request และใช้สร้าง API/server ของระบบ
 const express = require("express");
 const path = require("path");
 const YAML = require("js-yaml");
 const fs = require("fs");
 const swaggerUi = require("swagger-ui-express");
 
+// pool เป็น connection pool ที่ใช้คุยกับ MySQL ร่วมกันทุก route
 const pool = require("../db");
+// แยกงานเรียก Open-Meteo และงานตรวจ login/สิทธิ์ไว้ใน service และ auth
 const { getWeatherData } = require("./services/weather-service");
 const { login, requireAuth, requireAdmin } = require("./auth");
 
+// ใช้ PORT จาก environment ถ้าไม่มีให้ใช้ 3000
 const PORT = process.env.PORT || 3000;
 const app = express();
 
+// แปลง JSON request body ให้ route อ่านข้อมูลได้จาก req.body
 app.use(express.json());
-// backend/ กับ frontend/ เป็นโฟลเดอร์พี่น้องกัน; ให้หน้า Demo อยู่ origin เดียวกับ API
-app.use("/app", express.static(path.join(__dirname, "..", "..", "frontend")));
+// รองรับทั้งโครงสร้างตอนพัฒนา (backend/src + frontend) และชุดส่งงาน (src + frontend)
+const packagedFrontendPath = path.join(__dirname, "..", "frontend");
+const workspaceFrontendPath = path.join(__dirname, "..", "..", "frontend");
+const frontendPath = fs.existsSync(packagedFrontendPath)
+  ? packagedFrontendPath
+  : workspaceFrontendPath;
+app.use("/app", express.static(frontendPath));
+// เปลี่ยน /app เป็น /app/ เพื่อให้ path ของไฟล์หน้าเว็บทำงานสม่ำเสมอ
 app.get("/app", (req, res) => res.redirect("/app/"));
 
 // ─────────────────────────────────────────────
 //  Swagger UI  (/api-docs)
 // ─────────────────────────────────────────────
 const openapiPath = path.join(__dirname, "..", "openapi.yaml");
+// โหลดสัญญา API จาก YAML แล้วนำไปแสดงเป็นหน้า Swagger ที่ /api-docs
 const openapiDocument = YAML.load(fs.readFileSync(openapiPath, "utf8"));
 
 // พิกัดเป็นข้อมูลเสริมเพื่อรองรับข้อมูลสาขาเดิมที่ยังไม่เคยระบุตำแหน่ง
 function validateGymCoordinates(body) {
+  // พิกัดต้องส่งมาครบคู่ หรือไม่ส่งทั้งคู่ก็ได้ เพราะสาขาเก่าอาจยังไม่มีพิกัด
   const hasLatitude = Object.hasOwn(body, "latitude");
   const hasLongitude = Object.hasOwn(body, "longitude");
-  if (hasLatitude !== hasLongitude) return "latitude and longitude must be provided together";
+  if (hasLatitude !== hasLongitude)
+    return "latitude and longitude must be provided together";
   if (!hasLatitude) return null;
   if (body.latitude === null && body.longitude === null) return null;
-  if (body.latitude === null || body.longitude === null) return "latitude and longitude must be provided together";
-  if (typeof body.latitude !== "number" || !Number.isFinite(body.latitude) || body.latitude < -90 || body.latitude > 90) {
+  if (body.latitude === null || body.longitude === null)
+    return "latitude and longitude must be provided together";
+  if (
+    typeof body.latitude !== "number" ||
+    !Number.isFinite(body.latitude) ||
+    body.latitude < -90 ||
+    body.latitude > 90
+  ) {
     return "latitude must be a number between -90 and 90";
   }
-  if (typeof body.longitude !== "number" || !Number.isFinite(body.longitude) || body.longitude < -180 || body.longitude > 180) {
+  if (
+    typeof body.longitude !== "number" ||
+    !Number.isFinite(body.longitude) ||
+    body.longitude < -180 ||
+    body.longitude > 180
+  ) {
     return "longitude must be a number between -180 and 180";
   }
   return null;
@@ -67,12 +92,17 @@ app.get("/", (req, res) => {
   });
 });
 
-// เส้นทางอ่านเป็นสาธารณะ; ทุก POST/PUT/DELETE ใต้ /api ต้อง login ก่อน
+// Login เปิดให้เรียกได้โดยยังไม่ต้องมี token; /me ใช้ตรวจ token ปัจจุบัน
 app.post("/api/auth/login", login);
-app.get("/api/auth/me", requireAuth, (req, res) => res.json({ success: true, user: req.user }));
+app.get("/api/auth/me", requireAuth, (req, res) =>
+  res.json({ success: true, user: req.user }),
+);
+// middleware กลาง: GET อ่านได้สาธารณะ, การเขียนต้อง login และ DELETE ต้องเป็น admin
 app.use("/api", (req, res, next) => {
   if (!["POST", "PUT", "PATCH", "DELETE"].includes(req.method)) return next();
-  requireAuth(req, res, () => req.method === "DELETE" ? requireAdmin(req, res, next) : next());
+  requireAuth(req, res, () =>
+    req.method === "DELETE" ? requireAdmin(req, res, next) : next(),
+  );
 });
 
 // ══════════════════════════════════════════════
@@ -82,6 +112,7 @@ app.use("/api", (req, res, next) => {
 // GET /api/gyms  — ดูทั้งหมด (รองรับ ?max_fee=<number>)
 app.get("/api/gyms", async (req, res) => {
   try {
+    // query string ใช้กรองสาขาตามค่าบริการสูงสุด
     const { max_fee } = req.query;
     let sql = "SELECT * FROM gyms";
     const params = [];
@@ -91,15 +122,23 @@ app.get("/api/gyms", async (req, res) => {
       if (!Number.isFinite(fee) || fee < 0) {
         return res
           .status(400)
-          .json({ success: false, message: "max_fee must be a non-negative number" });
+          .json({
+            success: false,
+            message: "max_fee must be a non-negative number",
+          });
       }
       sql += " WHERE monthly_fee <= ?";
       params.push(fee);
     }
 
     sql += " ORDER BY id ASC";
+    // pool.query คืน rows ที่อ่านได้; จัดรูปแบบพิกัดก่อนส่งตามชนิดใน OpenAPI
     const [rows] = await pool.query(sql, params);
-    res.json({ success: true, count: rows.length, data: rows.map(formatGymCoordinates) });
+    res.json({
+      success: true,
+      count: rows.length,
+      data: rows.map(formatGymCoordinates),
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({
@@ -113,7 +152,15 @@ app.get("/api/gyms", async (req, res) => {
 // POST /api/gyms  — เพิ่มสาขาใหม่
 app.post("/api/gyms", async (req, res) => {
   try {
-    const { name, address, monthly_fee, phone_number, latitude = null, longitude = null } = req.body;
+    // ข้อมูลสาขาใหม่มาจาก JSON body; พิกัดเป็นข้อมูลเสริม
+    const {
+      name,
+      address,
+      monthly_fee,
+      phone_number,
+      latitude = null,
+      longitude = null,
+    } = req.body;
     if (!name || !address || monthly_fee == null || !phone_number) {
       return res.status(400).json({
         success: false,
@@ -122,10 +169,21 @@ app.post("/api/gyms", async (req, res) => {
       });
     }
     // DECIMAL ใน MySQL รับเฉพาะค่าตัวเลขที่ไม่ติดลบ; ปฏิเสธก่อนส่ง SQL
-    if (typeof monthly_fee !== "number" || !Number.isFinite(monthly_fee) || monthly_fee < 0)
-      return res.status(400).json({ success: false, message: "monthly_fee must be a non-negative number" });
+    if (
+      typeof monthly_fee !== "number" ||
+      !Number.isFinite(monthly_fee) ||
+      monthly_fee < 0
+    )
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "monthly_fee must be a non-negative number",
+        });
     const coordinateError = validateGymCoordinates(req.body);
-    if (coordinateError) return res.status(400).json({ success: false, message: coordinateError });
+    if (coordinateError)
+      return res.status(400).json({ success: false, message: coordinateError });
+    // INSERT ใช้ ? แยกค่าจาก SQL และ insertId คือรหัสสาขาที่ฐานข้อมูลสร้างให้
     const [result] = await pool.query(
       "INSERT INTO gyms (name, address, monthly_fee, phone_number, latitude, longitude) VALUES (?, ?, ?, ?, ?, ?)",
       [name, address, monthly_fee, phone_number, latitude, longitude],
@@ -151,9 +209,11 @@ app.post("/api/gyms", async (req, res) => {
 // GET /api/gyms/:id  — ดูสาขาตาม ID
 app.get("/api/gyms/:id", async (req, res) => {
   try {
+    // :id เป็น path parameter เช่น /api/gyms/2
     const [rows] = await pool.query("SELECT * FROM gyms WHERE id = ?", [
       req.params.id,
     ]);
+    // 404 ใช้เมื่อ route ทำงานได้ แต่ไม่มีสาขารหัสนี้ในฐานข้อมูล
     if (rows.length === 0)
       return res.status(404).json({ success: false, message: "Gym not found" });
     res.json({ success: true, data: formatGymCoordinates(rows[0]) });
@@ -170,6 +230,7 @@ app.get("/api/gyms/:id", async (req, res) => {
 // PUT /api/gyms/:id  — แก้ไขสาขา
 app.put("/api/gyms/:id", async (req, res) => {
   try {
+    // PUT รับข้อมูลชุดใหม่ของสาขาและตรวจค่าก่อนแก้ฐานข้อมูล
     const { name, address, monthly_fee, phone_number } = req.body;
     if (!name || !address || monthly_fee == null || !phone_number) {
       return res.status(400).json({
@@ -178,10 +239,20 @@ app.put("/api/gyms/:id", async (req, res) => {
           "Missing required fields: name, address, monthly_fee, phone_number",
       });
     }
-    if (typeof monthly_fee !== "number" || !Number.isFinite(monthly_fee) || monthly_fee < 0)
-      return res.status(400).json({ success: false, message: "monthly_fee must be a non-negative number" });
+    if (
+      typeof monthly_fee !== "number" ||
+      !Number.isFinite(monthly_fee) ||
+      monthly_fee < 0
+    )
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "monthly_fee must be a non-negative number",
+        });
     const coordinateError = validateGymCoordinates(req.body);
-    if (coordinateError) return res.status(400).json({ success: false, message: coordinateError });
+    if (coordinateError)
+      return res.status(400).json({ success: false, message: coordinateError });
     const [check] = await pool.query("SELECT id FROM gyms WHERE id = ?", [
       req.params.id,
     ]);
@@ -189,11 +260,22 @@ app.put("/api/gyms/:id", async (req, res) => {
       return res.status(404).json({ success: false, message: "Gym not found" });
 
     // PUT รุ่นเดิมที่ยังไม่ส่งพิกัดต้องไม่ลบพิกัดที่สาขามีอยู่แล้ว
-    const updateCoordinates = Object.hasOwn(req.body, "latitude") && Object.hasOwn(req.body, "longitude");
+    // ถ้าคำขอเก่าไม่ส่งพิกัด จะอัปเดตเฉพาะข้อมูลสาขาและรักษาพิกัดเดิมไว้
+    const updateCoordinates =
+      Object.hasOwn(req.body, "latitude") &&
+      Object.hasOwn(req.body, "longitude");
     if (updateCoordinates) {
       await pool.query(
         "UPDATE gyms SET name=?, address=?, monthly_fee=?, phone_number=?, latitude=?, longitude=? WHERE id=?",
-        [name, address, monthly_fee, phone_number, req.body.latitude, req.body.longitude, req.params.id],
+        [
+          name,
+          address,
+          monthly_fee,
+          phone_number,
+          req.body.latitude,
+          req.body.longitude,
+          req.params.id,
+        ],
       );
     } else {
       await pool.query(
@@ -222,11 +304,13 @@ app.put("/api/gyms/:id", async (req, res) => {
 // DELETE /api/gyms/:id  — ลบสาขา
 app.delete("/api/gyms/:id", async (req, res) => {
   try {
+    // ตรวจว่ามีสาขาก่อนลบ; สิทธิ์ admin ถูกตรวจโดย middleware กลางด้านบน
     const [check] = await pool.query("SELECT id FROM gyms WHERE id = ?", [
       req.params.id,
     ]);
     if (check.length === 0)
       return res.status(404).json({ success: false, message: "Gym not found" });
+    // ลบสาขา; foreign key แบบ cascade จะลบประวัติสมัครที่ผูกกับสาขานี้ด้วย
     await pool.query("DELETE FROM gyms WHERE id = ?", [req.params.id]);
     res.json({ success: true, message: "Gym deleted successfully" });
   } catch (err) {
@@ -242,6 +326,7 @@ app.delete("/api/gyms/:id", async (req, res) => {
 // GET /api/gyms/:gymId/memberships  — ดูประวัติสมาชิกของสาขา
 app.get("/api/gyms/:gymId/memberships", async (req, res) => {
   try {
+    // ตรวจสาขาก่อน แล้ว JOIN เพื่อได้ทั้งข้อมูลสมัครและชื่อสมาชิก/สาขา
     const [gym] = await pool.query("SELECT * FROM gyms WHERE id = ?", [
       req.params.gymId,
     ]);
@@ -280,6 +365,7 @@ app.get("/api/gyms/:gymId/memberships", async (req, res) => {
 // GET /api/members
 app.get("/api/members", async (req, res) => {
   try {
+    // คืนสมาชิกทั้งหมดเรียงตาม ID เพื่อให้ลำดับผลลัพธ์คงที่
     const [rows] = await pool.query("SELECT * FROM members ORDER BY id ASC");
     res.json({ success: true, count: rows.length, data: rows });
   } catch (err) {
@@ -295,6 +381,7 @@ app.get("/api/members", async (req, res) => {
 // POST /api/members
 app.post("/api/members", async (req, res) => {
   try {
+    // ข้อมูลสมาชิกที่ส่งมาจากฟอร์มอยู่ใน JSON body
     const { full_name, email, phone_number, join_date } = req.body;
     if (!full_name || !email || !phone_number || !join_date) {
       return res.status(400).json({
@@ -303,6 +390,7 @@ app.post("/api/members", async (req, res) => {
           "Missing required fields: full_name, email, phone_number, join_date",
       });
     }
+    // อีเมลต้องไม่ซ้ำ เพื่อใช้ระบุตัวสมาชิกได้ไม่กำกวม
     const [dup] = await pool.query("SELECT id FROM members WHERE email = ?", [
       email,
     ]);
@@ -311,6 +399,7 @@ app.post("/api/members", async (req, res) => {
         .status(409)
         .json({ success: false, message: "Email already exists" });
 
+    // เพิ่มสมาชิก แล้วใช้ insertId อ่านข้อมูลที่สร้างกลับไปตอบหน้าเว็บ
     const [result] = await pool.query(
       "INSERT INTO members (full_name, email, phone_number, join_date) VALUES (?, ?, ?, ?)",
       [full_name, email, phone_number, join_date],
@@ -333,18 +422,22 @@ app.post("/api/members", async (req, res) => {
   }
 });
 
-// GET /api/members/:id
+// GET /api/members/:id — อ่านรายละเอียดสมาชิกตามรหัสที่หน้าเว็บส่งมา
 app.get("/api/members/:id", async (req, res) => {
   try {
+    // ใช้รหัสจาก URL ค้นหาสมาชิก โดย ? ช่วยแยกค่าข้อมูลออกจากคำสั่ง SQL
     const [rows] = await pool.query("SELECT * FROM members WHERE id = ?", [
       req.params.id,
     ]);
+    // ถ้าไม่พบรหัสนี้ ให้ตอบ 404 เพื่อแจ้งว่าหาสมาชิกไม่เจอ
     if (rows.length === 0)
       return res
         .status(404)
         .json({ success: false, message: "Member not found" });
+    // ถ้าพบ ส่งข้อมูลสมาชิกแถวแรกกลับไปให้หน้าเว็บแสดงรายละเอียด
     res.json({ success: true, data: rows[0] });
   } catch (err) {
+    // หากเกิดข้อผิดพลาดระหว่างติดต่อฐานข้อมูล ให้ตอบ 500
     console.error(err);
     res.status(500).json({
       success: false,
@@ -357,6 +450,7 @@ app.get("/api/members/:id", async (req, res) => {
 // PUT /api/members/:id
 app.put("/api/members/:id", async (req, res) => {
   try {
+    // รับข้อมูลสมาชิกชุดใหม่ ตรวจว่ามีรหัสนี้ก่อน UPDATE
     const { full_name, email, phone_number, join_date } = req.body;
     if (!full_name || !email || !phone_number || !join_date) {
       return res.status(400).json({
@@ -398,6 +492,7 @@ app.put("/api/members/:id", async (req, res) => {
 // DELETE /api/members/:id
 app.delete("/api/members/:id", async (req, res) => {
   try {
+    // การลบถูกจำกัดเป็น admin โดย middleware; foreign key อาจลบประวัติสมัครที่ผูกอยู่ด้วย
     const [check] = await pool.query("SELECT id FROM members WHERE id = ?", [
       req.params.id,
     ]);
@@ -424,6 +519,8 @@ app.delete("/api/members/:id", async (req, res) => {
 // GET /api/memberships
 app.get("/api/memberships", async (req, res) => {
   try {
+    // JOIN เติมชื่อสมาชิกและชื่อสาขาให้หน้าเว็บ ไม่ต้องแสดงแต่ foreign key
+    // เงื่อนไข ON จับคู่ foreign key กับ id ของตารางที่เกี่ยวข้อง
     const [rows] = await pool.query(
       `SELECT ms.*, m.full_name AS member_name, m.email AS member_email, g.name AS gym_name
        FROM memberships ms
@@ -445,6 +542,7 @@ app.get("/api/memberships", async (req, res) => {
 // POST /api/memberships
 app.post("/api/memberships", async (req, res) => {
   try {
+    // การสมัครเชื่อม member กับ gym พร้อมช่วงวันที่และสถานะเริ่มต้น
     const {
       member_id,
       gym_id,
@@ -460,8 +558,17 @@ app.post("/api/memberships", async (req, res) => {
       });
     }
     // ช่วงวันที่ต้องเรียงถูกต้องและ status ต้องเป็นข้อความตาม enum
-    if (typeof start_date !== "string" || typeof end_date !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(start_date) || !/^\d{4}-\d{2}-\d{2}$/.test(end_date) || end_date < start_date)
-      return res.status(400).json({ success: false, message: "Invalid date range" });
+    if (
+      typeof start_date !== "string" ||
+      typeof end_date !== "string" ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(start_date) ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(end_date) ||
+      end_date < start_date
+    )
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid date range" });
+    // ตรวจ foreign key ทั้งสองฝั่งก่อนสร้างความสัมพันธ์
     const [memberCheck] = await pool.query(
       "SELECT id FROM members WHERE id = ?",
       [member_id],
@@ -478,13 +585,18 @@ app.post("/api/memberships", async (req, res) => {
       return res.status(404).json({ success: false, message: "Gym not found" });
 
     const validStatuses = ["ACTIVE", "EXPIRED", "CANCELLED"];
-    if (typeof status !== "string" || !validStatuses.includes(status.toUpperCase())) {
+    // แปลงเป็นตัวพิมพ์ใหญ่ก่อนตรวจและบันทึก เพื่อเก็บสถานะเป็นรูปแบบเดียวกัน
+    if (
+      typeof status !== "string" ||
+      !validStatuses.includes(status.toUpperCase())
+    ) {
       return res.status(400).json({
         success: false,
         message: "Invalid status. Must be ACTIVE, EXPIRED, or CANCELLED",
       });
     }
 
+    // บันทึกประวัติสมัคร และคืนแถวที่เพิ่งสร้างให้หน้าเว็บ
     const [result] = await pool.query(
       "INSERT INTO memberships (member_id, gym_id, start_date, end_date, status) VALUES (?, ?, ?, ?, ?)",
       [member_id, gym_id, start_date, end_date, status.toUpperCase()],
@@ -510,6 +622,7 @@ app.post("/api/memberships", async (req, res) => {
 // PUT /api/memberships/:id/status  — อัปเดตสถานะ
 app.put("/api/memberships/:id/status", async (req, res) => {
   try {
+    // เปลี่ยนเฉพาะสถานะของรายการสมัครที่มีอยู่ โดยรับสถานะใหม่จาก JSON body
     const { status } = req.body;
     const validStatuses = ["ACTIVE", "EXPIRED", "CANCELLED"];
     if (!status) {
@@ -517,7 +630,10 @@ app.put("/api/memberships/:id/status", async (req, res) => {
         .status(400)
         .json({ success: false, message: "Missing required field: status" });
     }
-    if (typeof status !== "string" || !validStatuses.includes(status.toUpperCase())) {
+    if (
+      typeof status !== "string" ||
+      !validStatuses.includes(status.toUpperCase())
+    ) {
       return res.status(400).json({
         success: false,
         message: "Invalid status. Must be ACTIVE, EXPIRED, or CANCELLED",
@@ -532,6 +648,7 @@ app.put("/api/memberships/:id/status", async (req, res) => {
         .status(404)
         .json({ success: false, message: "Membership not found" });
 
+    // แก้เฉพาะ status ของรายการสมัครนี้ ไม่เปลี่ยนสมาชิก สาขา หรือช่วงวันที่
     await pool.query("UPDATE memberships SET status=? WHERE id=?", [
       status.toUpperCase(),
       req.params.id,
@@ -559,19 +676,44 @@ app.put("/api/memberships/:id/status", async (req, res) => {
 // ══════════════════════════════════════════════
 app.get("/api/weather", async (req, res) => {
   try {
+    // lat/lon ต้องส่งมาด้วยกัน; ถ้าไม่ส่งจะใช้พิกัดเริ่มต้นเป็นกรุงเทพฯ
     if ((req.query.lat === undefined) !== (req.query.lon === undefined)) {
-      return res.status(400).json({ success: false, message: "lat and lon must be provided together" });
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "lat and lon must be provided together",
+        });
     }
-    if (req.query.lat !== undefined && (String(req.query.lat).trim() === "" || String(req.query.lon).trim() === "")) {
-      return res.status(400).json({ success: false, message: "lat and lon must be valid numbers" });
+    if (
+      req.query.lat !== undefined &&
+      (String(req.query.lat).trim() === "" ||
+        String(req.query.lon).trim() === "")
+    ) {
+      return res
+        .status(400)
+        .json({ success: false, message: "lat and lon must be valid numbers" });
     }
     const lat = req.query.lat === undefined ? 13.7563 : Number(req.query.lat);
     const lon = req.query.lon === undefined ? 100.5018 : Number(req.query.lon);
-    if (!Number.isFinite(lat) || lat < -90 || lat > 90 || !Number.isFinite(lon) || lon < -180 || lon > 180) {
-      return res.status(400).json({ success: false, message: "lat must be between -90 and 90 and lon between -180 and 180" });
+    if (
+      !Number.isFinite(lat) ||
+      lat < -90 ||
+      lat > 90 ||
+      !Number.isFinite(lon) ||
+      lon < -180 ||
+      lon > 180
+    ) {
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message:
+            "lat must be between -90 and 90 and lon between -180 and 180",
+        });
     }
 
-    // weather-service จัดการ fallback ไว้แล้ว → route นี้คืน 200 เสมอ
+    // service จัดการ timeout/retry/fallback; เมื่อรับพิกัดถูกต้อง route ส่งผลกลับเป็น JSON
     const weather = await getWeatherData(lat, lon);
 
     return res.status(200).json({
@@ -588,7 +730,7 @@ app.get("/api/weather", async (req, res) => {
 });
 
 // ─────────────────────────────────────────────
-// เปิดพอร์ตเฉพาะเมื่อรันไฟล์โดยตรง; ตอนทดสอบจะ import app ไปเปิดพอร์ตชั่วคราว
+// เปิดพอร์ตเมื่อสั่งรันไฟล์นี้โดยตรง; การ import app จากไฟล์ทดสอบจะไม่เปิดพอร์ตเอง
 if (require.main === module) {
   app.listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}`);

@@ -1,8 +1,10 @@
 // ตัวช่วยเลือก element ในหน้าเว็บ และกล่องแจ้งผลที่ใช้ร่วมกันทุกฟอร์ม
 const $ = (selector) => document.querySelector(selector);
 const notice = $("#notice");
+// token อยู่ใน sessionStorage ของแท็บนี้และใช้แนบไปกับ request; currentUser คุมส่วนที่ต้อง login
 let token = sessionStorage.getItem("gymToken");
 let currentUser = null;
+// แปลงรหัสสถานะจาก API ให้เป็นข้อความภาษาไทยสำหรับหน้าเว็บ
 const statusLabels = { ACTIVE: "ใช้งานอยู่", EXPIRED: "หมดอายุ", CANCELLED: "ยกเลิก" };
 const statusDescriptions = {
   ACTIVE: "แพ็กเกจกลับมาใช้งานอยู่",
@@ -119,6 +121,7 @@ async function deleteRecord(path, label, cascadeNote) {
 async function api(path, options = {}) {
   let response;
   try {
+    // เรียก API บน origin เดียวกัน; แนบ JSON header และ token ถ้ามี
     response = await fetch(path, {
       ...options,
       headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}), ...options.headers },
@@ -127,6 +130,7 @@ async function api(path, options = {}) {
     throw new Error("เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ กรุณาตรวจสอบว่า API ทำงานอยู่");
   }
   const body = await response.json().catch(() => ({}));
+  // 401 หมายถึง session ใช้ไม่ได้แล้ว จึงล้าง token และล็อกหน้าเว็บกลับ
   if (response.status === 401 && path !== "/api/auth/login") {
     token = null; currentUser = null; sessionStorage.removeItem("gymToken"); showSession();
   }
@@ -163,6 +167,7 @@ function renderGyms(gyms) {
     const sequence = gymRows.findIndex((item) => String(item.id) === String(gym.id)) + 1;
     cardHead.append(el("span", "num", `สาขา ${String(sequence).padStart(2, "0")}`));
     if (currentUser?.role === "admin") {
+      // ปุ่มลบแสดงให้ admin; API ตรวจสิทธิ์ซ้ำก่อนลบจริง
       const remove = el("button", "row-delete", "ลบสาขา");
       remove.type = "button";
       remove.addEventListener("click", () => deleteRecord(
@@ -234,6 +239,7 @@ function renderGyms(gyms) {
     });
     actions.append(detail, memberships);
     if (currentUser) {
+      // staff และ admin แก้ไขได้; การลบยังจำกัดเฉพาะ admin
       const edit = el("button", "", "แก้ไขสาขา");
       edit.type = "button";
       edit.addEventListener("click", () => editGym(gym.id));
@@ -277,6 +283,7 @@ function renderMembers(members) {
     // รวมรหัสและปุ่มของสมาชิกไว้กลุ่มเดียว เพื่อไม่ให้ปุ่มแยกห่างกันบนจอมือถือ
     const controls = el("div", "member-controls");
     controls.append(el("small", "member-id", `#${member.id}`));
+    // ปุ่มนี้เปิดหรือซ่อนรายละเอียดของสมาชิก โดยโหลดรายละเอียดจาก API เมื่อผู้ใช้เปิดดู
     const detail = el("button", "record-link", "ดูข้อมูล");
     detail.type = "button";
     const panel = el("div", "member-detail-panel");
@@ -287,6 +294,7 @@ function renderMembers(members) {
     detail.setAttribute("aria-controls", panel.id);
     detail.setAttribute("aria-expanded", "false");
     detail.addEventListener("click", async () => {
+      // ถ้าเปิดแผงอยู่แล้ว ให้ซ่อนและจบการทำงานโดยไม่ส่งคำขอเพิ่ม
       if (!panel.hidden) {
         panel.hidden = true;
         detail.textContent = "ดูข้อมูล";
@@ -298,12 +306,15 @@ function renderMembers(members) {
       detail.disabled = true;
       detail.setAttribute("aria-expanded", "true");
       try {
+        // ส่ง GET request ไปยัง API โดยใส่รหัสสมาชิกใน URL เช่น /api/members/1
         const result = await api(`/api/members/${member.id}`);
+        // เลือกข้อมูลที่ต้องแสดง แล้วแปลงวันที่ให้อ่านง่าย
         const fields = [
           ["ชื่อ–นามสกุล", result.data.full_name], ["อีเมล", result.data.email],
           ["เบอร์โทรศัพท์", result.data.phone_number], ["วันที่สมัคร", formatThaiDate(result.data.join_date)],
         ];
         const list = el("dl", "member-detail-grid");
+        // สร้างป้ายชื่อและค่าของแต่ละช่องจากข้อมูลที่ API ส่งกลับมา
         for (const [label, value] of fields) {
           const field = el("div");
           field.append(el("dt", "", label), el("dd", "", value || "—"));
@@ -312,18 +323,21 @@ function renderMembers(members) {
         panel.replaceChildren(list);
         detail.textContent = "ซ่อนข้อมูล";
       } catch (error) {
+        // แสดงข้อผิดพลาดในแผงรายละเอียด หากเรียก API ไม่สำเร็จ
         panel.textContent = `โหลดข้อมูลไม่สำเร็จ: ${error.message}`;
         panel.classList.add("error");
       } finally { detail.disabled = false; }
     });
     controls.append(detail);
     if (currentUser) {
+      // ผู้ใช้ที่ login แล้วแก้ไขสมาชิกได้
       const edit = el("button", "record-link", "แก้ไข");
       edit.type = "button";
       edit.addEventListener("click", () => editMember(member.id));
       controls.append(edit);
     }
     if (currentUser?.role === "admin") {
+      // เฉพาะ admin จึงเห็นปุ่มลบ; API เป็นผู้บังคับสิทธิ์จริง
       const remove = el("button", "row-delete", "ลบ");
       remove.type = "button";
       remove.setAttribute("aria-label", `ลบสมาชิก ${member.full_name}`);
@@ -356,6 +370,7 @@ function fillChoices(name, items, label) {
 // แก้ไขจากข้อมูล GET ตาม ID เพื่อไม่ใช้ค่าที่อาจเก่าจากรายการบนหน้า
 async function editGym(id) {
   try {
+    // โหลดข้อมูลล่าสุดจาก API ก่อนเติมฟอร์มแก้ไข
     const { data } = await api(`/api/gyms/${id}`);
     editingGymId = id;
     $("#gym-entry").open = true;
@@ -369,6 +384,7 @@ async function editGym(id) {
 
 async function editMember(id) {
   try {
+    // ใช้ข้อมูลล่าสุดจาก API เติมฟอร์ม ไม่อาศัยข้อมูลย่อในรายการ
     const { data } = await api(`/api/members/${id}`);
     editingMemberId = id;
     const form = $("#member-form");
@@ -381,6 +397,7 @@ async function editMember(id) {
 }
 
 function resetGymForm() {
+  // ยกเลิกโหมดแก้ไขและคืนฟอร์มสาขาเป็นโหมดเพิ่มรายการใหม่
   editingGymId = null;
   $("#gym-form").reset();
   $("#gym-form-title").textContent = "เพิ่มสาขา";
@@ -389,6 +406,7 @@ function resetGymForm() {
 }
 
 function resetMemberForm() {
+  // ยกเลิกโหมดแก้ไขและคืนฟอร์มสมาชิกเป็นโหมดลงทะเบียนใหม่
   editingMemberId = null;
   $("#member-form").reset();
   $("#member-form-title").textContent = "ลงทะเบียนสมาชิก";
@@ -458,6 +476,7 @@ function renderMemberships(memberships) {
     async function writeStatus(nextStatus, successText) {
       select.disabled = true; save.disabled = true; cancel.disabled = true; undo.disabled = true;
       try {
+        // ส่งสถานะใหม่ไปยัง API; ปุ่มถูกปิดชั่วคราวกันการส่งซ้ำระหว่างรอผล
         const result = await api(`/api/memberships/${membership.id}/status`, {
           method: "PUT",
           body: JSON.stringify({ status: nextStatus }),
@@ -494,6 +513,7 @@ async function load() {
   $("#summary").textContent = "กำลังโหลด...";
   try {
     const [gyms, members, memberships] = await Promise.all([
+      // ดึงข้อมูลหลักพร้อมกันเพื่อลดเวลารอหน้าเว็บ
       api(maxFee === "" ? "/api/gyms" : `/api/gyms?max_fee=${encodeURIComponent(maxFee)}`), api("/api/members"), api("/api/memberships"),
     ]);
     // ตัวกรองราคาเปลี่ยนเฉพาะการ์ด; ตัวเลือกสมัครแพ็กเกจต้องยังเห็นทุกสาขา
@@ -531,6 +551,7 @@ $("#login-form").addEventListener("submit", async (event) => {
   const form = event.currentTarget;
   const values = Object.fromEntries(new FormData(form));
   try {
+    // ส่งอีเมล/รหัสผ่านไปตรวจที่ API; token จะได้เมื่อข้อมูลถูกต้องเท่านั้น
     const result = await api("/api/auth/login", { method: "POST", body: JSON.stringify(values) });
     token = result.token; currentUser = result.user; sessionStorage.setItem("gymToken", token);
     form.reset(); showSession(); message("เข้าสู่ระบบสำเร็จ", true); await load();
@@ -540,6 +561,7 @@ $("#login-form").addEventListener("submit", async (event) => {
 });
 
 $("#logout").addEventListener("click", () => {
+  // ออกจากระบบโดยลบ token และปิดส่วนที่ต้องยืนยันตัวตน
   token = null; currentUser = null; sessionStorage.removeItem("gymToken"); resetGymForm(); resetMemberForm(); showSession(); message("ออกจากระบบแล้ว", true); load();
 });
 
@@ -561,6 +583,7 @@ $("#gym-form").addEventListener("submit", async (event) => {
   const button = form.querySelector('[type="submit"]');
   button.disabled = true;
   try {
+    // editingGymId มีค่าให้ใช้ PUT; ถ้าไม่มีให้ POST สร้างสาขาใหม่
     await api(editingGymId ? `/api/gyms/${editingGymId}` : "/api/gyms", {
       method: editingGymId ? "PUT" : "POST", body: JSON.stringify(values),
     });
@@ -616,8 +639,10 @@ $("#weather-reload").addEventListener("click", async () => {
   target.classList.remove("error");
   target.textContent = "กำลังโหลดสภาพอากาศ...";
   try {
+    // ส่งพิกัดสาขาที่เลือกเป็น query string ไปยัง API ฝั่งเซิร์ฟเวอร์
     const { data } = await api(`/api/weather?lat=${encodeURIComponent(gym.latitude)}&lon=${encodeURIComponent(gym.longitude)}`);
     const weather = data.weather;
+    // available=false หมายถึง service คืน fallback เพราะ Open-Meteo ใช้งานไม่ได้
     if (!weather.available) {
       target.textContent = weather.note || "บริการสภาพอากาศยังไม่พร้อม กรุณาลองใหม่ภายหลัง";
       target.classList.add("error");
@@ -640,6 +665,7 @@ $("#weather-reload").addEventListener("click", async () => {
 // รีเฟรชหน้าแล้วยังคง session เฉพาะเมื่อ API ยอมรับ token เดิม
 async function restoreSession() {
   if (token) {
+    // ขอให้ server ยืนยัน token ก่อนเปิดฟอร์ม; token ที่หมดอายุจะถูกล้าง
     try { currentUser = (await api("/api/auth/me")).user; }
     catch { token = null; sessionStorage.removeItem("gymToken"); }
   }
@@ -656,6 +682,7 @@ $("#member-form").addEventListener("submit", async (event) => {
   button.disabled = true;
   try {
     const wasEditing = Boolean(editingMemberId);
+    // ใช้ฟอร์มเดียวกันทั้งเพิ่มและแก้ โดยเลือก method/URL ตามสถานะการแก้ไข
     const result = await api(wasEditing ? `/api/members/${editingMemberId}` : "/api/members", {
       method: wasEditing ? "PUT" : "POST", body: JSON.stringify(values),
     });
@@ -699,6 +726,7 @@ $("#membership-form").addEventListener("submit", async (event) => {
   const button = form.querySelector("button");
   button.disabled = true;
   try {
+    // สร้างรายการสมัคร; หลังบันทึกสำเร็จโหลดข้อมูลใหม่ให้ตารางตรงกับฐานข้อมูล
     await api("/api/memberships", { method: "POST", body: JSON.stringify(values) });
     form.reset();
     localMessage("#membership-feedback", "สมัครแพ็กเกจสำเร็จ", true);
@@ -709,7 +737,7 @@ $("#membership-form").addEventListener("submit", async (event) => {
     button.disabled = false;
   }
 });
-// เริ่มดึงข้อมูลทันทีเมื่อสคริปต์โหลดเสร็จ (script ใช้ defer)
+// ติดตาม section ที่มองเห็นเพื่อไฮไลต์เมนูนำทางปัจจุบัน
 const sectionNavLinks = [...document.querySelectorAll('.topbar nav a[href^="#"]')];
 const sectionNavTargets = sectionNavLinks
   .map((link) => document.querySelector(link.getAttribute("href")))
@@ -736,4 +764,5 @@ if ("IntersectionObserver" in window && sectionNavTargets.length) {
   sectionNavTargets.forEach((section) => sectionObserver.observe(section));
 }
 
+// ตรวจ session เดิมก่อน แล้วจึงโหลดข้อมูลมาแสดงตอนเปิดหน้าเว็บ
 restoreSession().then(load);
