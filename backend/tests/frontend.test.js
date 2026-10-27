@@ -1,7 +1,10 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { JSDOM } = require("jsdom");
-const frontend = path.join(__dirname, "..", "..", "frontend");
+// รองรับทั้ง repository (backend/tests + frontend) และ ZIP ส่งงาน (tests + frontend)
+const packagedFrontend = path.join(__dirname, "..", "frontend");
+const workspaceFrontend = path.join(__dirname, "..", "..", "frontend");
+const frontend = fs.existsSync(packagedFrontend) ? packagedFrontend : workspaceFrontend;
 const html = fs.readFileSync(path.join(frontend, "index.html"), "utf8");
 const script = fs.readFileSync(path.join(frontend, "app.js"), "utf8");
 const tick = () => new Promise((resolve) => setTimeout(resolve, 0));

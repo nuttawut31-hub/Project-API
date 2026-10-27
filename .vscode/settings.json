@@ -1,0 +1,7 @@
+{
+  "files.exclude": {
+    "**/.agents": true,
+    "**/.codex": true,
+    "**/.impeccable": true
+  }
+}

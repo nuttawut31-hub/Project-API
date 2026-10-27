@@ -280,10 +280,12 @@ function renderMembers(members) {
     main.append(el("strong", "", member.full_name));
     main.append(el("small", "", member.email));
     row.append(main);
-    // รวมรหัสและปุ่มของสมาชิกไว้กลุ่มเดียว เพื่อไม่ให้ปุ่มแยกห่างกันบนจอมือถือ
+    // เลขที่แสดงเป็นลำดับต่อเนื่องของรายการ ไม่ใช้ Primary Key ที่อาจข้ามหลังลบข้อมูล
+    const sequence = memberRows.findIndex((item) => String(item.id) === String(member.id)) + 1;
+    // รวมลำดับและปุ่มของสมาชิกไว้กลุ่มเดียว เพื่อไม่ให้ปุ่มแยกห่างกันบนจอมือถือ
     const controls = el("div", "member-controls");
-    controls.append(el("small", "member-id", `#${member.id}`));
-    // ปุ่มนี้เปิดหรือซ่อนรายละเอียดของสมาชิก โดยโหลดรายละเอียดจาก API เมื่อผู้ใช้เปิดดู
+    controls.append(el("small", "member-id", `#${sequence}`));
+    // ปุ่มนี้ผูกกับแผงของสมาชิกคนนี้โดยตรง และโหลดรายละเอียดจาก API เมื่อผู้ใช้เปิดดู
     const detail = el("button", "record-link", "ดูข้อมูล");
     detail.type = "button";
     const panel = el("div", "member-detail-panel");
@@ -306,15 +308,15 @@ function renderMembers(members) {
       detail.disabled = true;
       detail.setAttribute("aria-expanded", "true");
       try {
-        // ส่ง GET request ไปยัง API โดยใส่รหัสสมาชิกใน URL เช่น /api/members/1
+        // ส่ง GET /api/members/:id โดยใช้ Primary Key จริง เพื่ออ่านสมาชิกที่กดดู
         const result = await api(`/api/members/${member.id}`);
-        // เลือกข้อมูลที่ต้องแสดง แล้วแปลงวันที่ให้อ่านง่าย
+        // API ตอบข้อมูลไว้ใน result.data; เลือกเฉพาะช่องที่หน้าเว็บต้องแสดง
         const fields = [
           ["ชื่อ–นามสกุล", result.data.full_name], ["อีเมล", result.data.email],
           ["เบอร์โทรศัพท์", result.data.phone_number], ["วันที่สมัคร", formatThaiDate(result.data.join_date)],
         ];
         const list = el("dl", "member-detail-grid");
-        // สร้างป้ายชื่อและค่าของแต่ละช่องจากข้อมูลที่ API ส่งกลับมา
+        // ใช้ dl/dt/dd จัดคู่ป้ายชื่อกับค่า แล้วใส่ลงแผงใต้แถวสมาชิก
         for (const [label, value] of fields) {
           const field = el("div");
           field.append(el("dt", "", label), el("dd", "", value || "—"));
